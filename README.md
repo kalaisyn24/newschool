@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Онлайн-школа
 
-## Getting Started
+Платформа дистанционного обучения на видеокурсах: Next.js 16 (App Router, Cache Components), Prisma 7 + MySQL/MariaDB, Tailwind CSS 4.
 
-First, run the development server:
+## Роли
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+| Роль | Раздел | Возможности |
+|---|---|---|
+| Студент | `/learn` | курсы, уроки, видео, тесты, задания, прогресс, история, сертификаты, уведомления, чат с поддержкой, настройки профиля |
+| Администратор | `/admin` | пользователи (поиск, редактирование, блокировка, удаление, сброс пароля, доступ к курсам, прогресс), курсы/модули/уроки/тесты/материалы, проверка заданий; плюс всё из раздела поддержки |
+| Техподдержка | `/support` | входящие обращения, чат, назначение, закрытие |
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Запуск
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Запустите MySQL 8 или MariaDB в OSPanel и создайте базу:
+   ```sql
+   CREATE DATABASE online_school CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+2. Скопируйте `.env.example` в `.env` и укажите `DATABASE_URL` (а также SMTP, если нужна реальная отправка писем).
+3. Установите зависимости, примените миграции и загрузите демо-данные:
+   ```bash
+   npm install
+   npm run db:deploy     # или npm run db:migrate при разработке
+   npm run db:seed
+   npm run dev
+   ```
+4. Откройте http://localhost:3000
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Демо-аккаунты из сида: `admin@school.local / admin12345`, `support@school.local / support12345`, `student@school.local / student12345` (данные администратора задаются через `SEED_ADMIN_*` в `.env`).
 
-## Learn More
+## Почта
 
-To learn more about Next.js, take a look at the following resources:
+Если `SMTP_HOST` не задан, письма (подтверждение e-mail, восстановление пароля, смена e-mail) сохраняются в `storage/mail-outbox/`, а ссылка из письма выводится в консоль сервера.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Файлы
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Обложки и материалы уроков хранятся в `storage/uploads/` (вне `public/`). Обложки отдаются через `/media/...`, материалы — через `/api/materials/:id` с проверкой доступа к уроку.
 
-## Deploy on Vercel
+## Логика прохождения
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Урок засчитывается, когда выполнены его условия: просмотр видео (не менее заданного %), сдача теста, отправка задания. Каждое условие администратор может отключить; урок без условий засчитывается при открытии.
+- Если в курсе включено «последовательное прохождение», следующий урок открывается только после завершения предыдущего.
+- Тесты: один или несколько правильных ответов, проходной балл, лимит попыток, показ правильных ответов после попытки.
+- Видео (YouTube/Vimeo) запоминает позицию; учитываются реально просмотренные отрезки, а не просто перемотка. Прогресс сохраняется каждые 10 секунд и при закрытии страницы.
+- По завершении курса приходит уведомление и, если включено, выдаётся сертификат (печать или PDF из браузера).

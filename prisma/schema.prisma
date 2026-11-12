@@ -1,0 +1,349 @@
+// Online school — database schema (MySQL / MariaDB)
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+  SUPPORT
+}
+
+enum TokenType {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+  CHANGE_EMAIL
+}
+
+enum CourseAccess {
+  OPEN // any registered student can enroll from the catalog
+  BY_GRANT // only the administrator opens access
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+}
+
+enum ConversationStatus {
+  OPEN
+  CLOSED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique @db.VarChar(191)
+  passwordHash  String
+  name          String    @db.VarChar(120)
+  phone         String?   @db.VarChar(40)
+  role          Role      @default(STUDENT)
+  emailVerified DateTime?
+  blocked       Boolean   @default(false)
+  lastSeenAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions       Session[]
+  tokens         Token[]
+  enrollments    Enrollment[]       @relation("EnrollmentUser")
+  grants         Enrollment[]       @relation("EnrollmentGrantedBy")
+  lessonProgress LessonProgress[]
+  testAttempts   TestAttempt[]
+  submissions    AssignmentSubmission[]
+  notifications  Notification[]
+  certificates   Certificate[]
+  activities     ActivityLog[]
+  conversations  Conversation[]     @relation("ConversationStudent")
+  assignedChats  Conversation[]     @relation("ConversationAgent")
+  messages       Message[]
+
+  @@index([role])
+  @@index([name])
+}
+
+model Session {
+  id         String   @id // sha256 of the cookie token
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent  String?  @db.VarChar(255)
+  ip         String?  @db.VarChar(64)
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+  expiresAt  DateTime
+
+  @@index([userId])
+}
+
+model Token {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique @db.VarChar(64)
+  type      TokenType
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  newEmail  String?   @db.VarChar(191)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, type])
+}
+
+model Course {
+  id                 String       @id @default(cuid())
+  title              String       @db.VarChar(200)
+  shortDescription   String       @db.VarChar(500)
+  description        String       @db.Text
+  objectives         String       @db.Text // one item per line
+  coverUrl           String?      @db.VarChar(500)
+  teacherName        String?      @db.VarChar(160)
+  teacherBio         String?      @db.Text
+  published          Boolean      @default(false)
+  access             CourseAccess @default(BY_GRANT)
+  // Lesson gating: next lesson opens only after the previous one is completed
+  sequential         Boolean      @default(true)
+  certificateEnabled Boolean      @default(false)
+  position           Int          @default(0)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  modules      Module[]
+  enrollments  Enrollment[]
+  certificates Certificate[]
+}
+
+model Module {
+  id       String   @id @default(cuid())
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title    String   @db.VarChar(200)
+  position Int      @default(0)
+  lessons  Lesson[]
+
+  @@index([courseId, position])
+}
+
+model Lesson {
+  id                String   @id @default(cuid())
+  moduleId          String
+  module            Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title             String   @db.VarChar(200)
+  summary           String?  @db.VarChar(500)
+  content           String?  @db.Text // text description
+  videoUrl          String?  @db.VarChar(500) // YouTube / Vimeo link
+  durationSec       Int      @default(0)
+  // Completion conditions (admin can switch them off)
+  requireVideo      Boolean  @default(true)
+  requiredWatchPct  Int      @default(90)
+  assignment        String?  @db.Text // practical assignment text
+  requireAssignment Boolean  @default(false)
+  published         Boolean  @default(true)
+  position          Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  materials   LessonMaterial[]
+  test        Test?
+  progress    LessonProgress[]
+  submissions AssignmentSubmission[]
+
+  @@index([moduleId, position])
+}
+
+model LessonMaterial {
+  id         String   @id @default(cuid())
+  lessonId   String
+  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title      String   @db.VarChar(200)
+  storageKey String?  @db.VarChar(300) // uploaded file
+  externalUrl String? @db.VarChar(500) // or an external link
+  mimeType   String?  @db.VarChar(120)
+  size       Int?
+  createdAt  DateTime @default(now())
+}
+
+model Test {
+  id           String  @id @default(cuid())
+  lessonId     String  @unique
+  lesson       Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  passingScore Int     @default(70) // percent
+  maxAttempts  Int? // null = unlimited
+  required     Boolean @default(true) // must be passed to complete the lesson
+  showAnswers  Boolean @default(true) // show correct answers after the attempt
+
+  questions Question[]
+  attempts  TestAttempt[]
+}
+
+model Question {
+  id       String         @id @default(cuid())
+  testId   String
+  test     Test           @relation(fields: [testId], references: [id], onDelete: Cascade)
+  text     String         @db.Text
+  multiple Boolean        @default(false)
+  position Int            @default(0)
+  options  AnswerOption[]
+
+  @@index([testId, position])
+}
+
+model AnswerOption {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String   @db.VarChar(500)
+  isCorrect  Boolean  @default(false)
+  position   Int      @default(0)
+}
+
+model TestAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testId    String
+  test      Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  score     Int // percent
+  correct   Int
+  total     Int
+  passed    Boolean
+  answers   Json // { [questionId]: optionId[] }
+  createdAt DateTime @default(now())
+
+  @@index([userId, testId])
+}
+
+model Enrollment {
+  id           String           @id @default(cuid())
+  userId       String
+  user         User             @relation("EnrollmentUser", fields: [userId], references: [id], onDelete: Cascade)
+  courseId     String
+  course       Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status       EnrollmentStatus @default(ACTIVE)
+  grantedById  String?
+  grantedBy    User?            @relation("EnrollmentGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
+  expiresAt    DateTime?
+  createdAt    DateTime         @default(now())
+  startedAt    DateTime?
+  completedAt  DateTime?
+  lastLessonId String?
+  lastAccessAt DateTime?
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+}
+
+model LessonProgress {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId       String
+  lesson         Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  videoPosition  Int       @default(0) // seconds, for "continue watching"
+  videoDuration  Int       @default(0)
+  watchedRanges  Json? // [[start, end], ...] seconds actually played
+  videoPercent   Int       @default(0)
+  videoCompleted Boolean   @default(false)
+  testPassed     Boolean   @default(false)
+  completedAt    DateTime?
+  firstViewedAt  DateTime  @default(now())
+  lastViewedAt   DateTime  @default(now())
+
+  @@unique([userId, lessonId])
+  @@index([lessonId])
+}
+
+model AssignmentSubmission {
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId   String
+  lesson     Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  text       String           @db.Text
+  status     SubmissionStatus @default(SUBMITTED)
+  feedback   String?          @db.Text
+  createdAt  DateTime         @default(now())
+  reviewedAt DateTime?
+
+  @@index([lessonId])
+  @@index([userId])
+  @@index([status])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String    @db.VarChar(200)
+  body      String?   @db.Text
+  link      String?   @db.VarChar(300)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Certificate {
+  id       String   @id @default(cuid())
+  number   String   @unique @db.VarChar(40)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  issuedAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String   @db.VarChar(60)
+  details   String?  @db.VarChar(500)
+  link      String?  @db.VarChar(300)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Conversation {
+  id            String             @id @default(cuid())
+  subject       String             @db.VarChar(200)
+  studentId     String
+  student       User               @relation("ConversationStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  agentId       String?
+  agent         User?              @relation("ConversationAgent", fields: [agentId], references: [id], onDelete: SetNull)
+  status        ConversationStatus @default(OPEN)
+  // unread flags for each side
+  unreadByStudent Boolean          @default(false)
+  unreadByStaff   Boolean          @default(true)
+  createdAt     DateTime           @default(now())
+  lastMessageAt DateTime           @default(now())
+  messages      Message[]
+
+  @@index([studentId])
+  @@index([status, lastMessageAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body           String       @db.Text
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
