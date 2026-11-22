@@ -85,10 +85,10 @@ export function TestRunner({
         <div
           className={cx(
             "rounded-2xl border p-5",
-            result.passed ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50",
+            result.passed ? "border-brand-300 bg-gradient-to-br from-brand-100 to-sky-50" : "border-amber-200 bg-amber-50",
           )}
         >
-          <p className={cx("text-lg font-semibold", result.passed ? "text-emerald-800" : "text-amber-800")}>
+          <p className={cx("text-lg font-semibold", "text-slate-900")}>
             {result.passed ? "Тест пройден! 🎉" : "Тест не пройден"}
           </p>
           <p className="mt-1 text-sm text-slate-700">
@@ -126,12 +126,12 @@ export function TestRunner({
                   <label
                     key={o.id}
                     className={cx(
-                      "flex cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-2.5 text-sm transition",
+                      "flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-2.5 text-sm transition",
                       rev
                         ? isCorrect
-                          ? "border-emerald-300 bg-emerald-50"
+                          ? "border-2 border-brand-600 bg-brand-100"
                           : checked
-                            ? "border-rose-300 bg-rose-50"
+                            ? "border-2 border-rose-300 bg-rose-50"
                             : "border-slate-200"
                         : checked
                           ? "border-brand-400 bg-brand-50"
@@ -147,7 +147,7 @@ export function TestRunner({
                       className="size-4 accent-brand-600"
                     />
                     <span className="flex-1">{o.text}</span>
-                    {rev && isCorrect && <span className="text-xs font-medium text-emerald-700">верно</span>}
+                    {rev && isCorrect && <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs text-brand-800 ring-1 ring-brand-300">верно</span>}
                   </label>
                 );
               })}

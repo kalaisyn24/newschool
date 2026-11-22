@@ -32,7 +32,7 @@ async function VerifyContent({ searchParams }: { searchParams: PageProps<"/verif
       const loggedIn = user?.id === token.userId;
       return (
         <div className="space-y-4">
-          <div className="grid size-14 place-items-center rounded-full bg-emerald-50 text-2xl text-emerald-600">✓</div>
+          <div className="grid size-14 place-items-center rounded-full bg-brand-100 text-2xl text-brand-800">✓</div>
           <h1 className="text-2xl font-semibold text-slate-900">E-mail подтверждён</h1>
           <p className="text-sm text-slate-500">Спасибо! Ваш аккаунт полностью активирован.</p>
           <Link href={loggedIn ? homeFor(user!.role) : "/login?verified=1"} className="btn-primary w-full">
@@ -80,7 +80,7 @@ async function VerifyContent({ searchParams }: { searchParams: PageProps<"/verif
 
   return (
     <div className="space-y-4">
-      <div className="grid size-14 place-items-center rounded-full bg-brand-50 text-2xl text-brand-600">✉</div>
+      <div className="grid size-14 place-items-center rounded-full bg-brand-50 text-2xl text-brand-700">✉</div>
       <h1 className="text-2xl font-semibold text-slate-900">Подтвердите e-mail</h1>
       <p className="text-sm text-slate-600">
         Мы отправили письмо со ссылкой на <b>{user.email}</b>. Перейдите по ней, чтобы открыть доступ к личному

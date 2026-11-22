@@ -76,7 +76,7 @@ export default async function CoursePage({ params }: PageProps<"/learn/courses/[
               )}
               {certificate && (
                 <Link href={`/learn/certificates/${certificate.id}`} className="btn-secondary">
-                  <Icon name="award" className="size-4" /> Сертификат
+                  <Icon name="award" className="size-4" /> {certificate.issuedAt ? "Сертификат" : "Сертификат готовится"}
                 </Link>
               )}
               {!enrollment && !isStaff && course.access === "OPEN" && (
@@ -169,7 +169,7 @@ export default async function CoursePage({ params }: PageProps<"/learn/courses/[
               <ul className="space-y-2.5">
                 {objectives.map((o, i) => (
                   <li key={i} className="flex gap-2.5 text-sm text-slate-700">
-                    <Icon name="check" className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+                    <Icon name="check" className="mt-0.5 size-4 shrink-0 text-brand-700" />
                     {o}
                   </li>
                 ))}

@@ -128,7 +128,7 @@ export default async function LessonPage({ params }: PageProps<"/learn/lessons/[
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 rounded-xl border border-slate-200 p-3 transition hover:border-brand-200 hover:bg-brand-50/40"
                   >
-                    <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700">
                       <Icon name="file" />
                     </span>
                     <span className="min-w-0">
@@ -206,7 +206,7 @@ export default async function LessonPage({ params }: PageProps<"/learn/lessons/[
                   {attempts.map((a, i) => (
                     <li key={a.id} className="flex items-center justify-between px-3 py-2">
                       <span className="text-slate-600">Попытка {attempts.length - i} · {formatDateTime(a.createdAt)}</span>
-                      <span className={a.passed ? "font-medium text-emerald-600" : "text-rose-600"}>
+                      <span className={a.passed ? "font-medium text-brand-700" : "text-rose-600"}>
                         {a.score}% ({a.correct}/{a.total})
                       </span>
                     </li>

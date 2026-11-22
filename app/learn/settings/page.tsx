@@ -85,7 +85,7 @@ export default async function SettingsPage() {
                     {s.ip ? `${s.ip} · ` : ""}активность {formatDateTime(s.lastUsedAt)}
                   </p>
                 </div>
-                {s.id === sid && <span className="text-xs font-medium text-emerald-600">Текущий</span>}
+                {s.id === sid && <span className="text-xs font-medium text-brand-700">Текущий</span>}
               </li>
             ))}
           </ul>

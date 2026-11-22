@@ -1,61 +1,227 @@
 @import "tailwindcss";
 
+/*
+ * Palette:
+ *   Brand blue  #2456E0 — primary actions, links, active states
+ *   Azure       #149BE0 — secondary accent for gradients and highlights
+ *   Navy ink    #0F1A2E — text and dark hero panels
+ *   Cool slate  — neutrals with a slight blue cast
+ * Supporting tones: sand for "pending" statuses, rose for errors / counters,
+ * emerald (Tailwind default) for success.
+ */
 :root {
-  --background: #f5f6fb;
-  --foreground: #1b1e2e;
+  --brand: #2456e0;
+  --bg: #f5f7fb;
+  --ink: #0f1a2e;
+  --background: var(--bg);
+  --foreground: var(--ink);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, "Segoe UI", Roboto, Arial, sans-serif;
-  --color-brand-50: #eef2ff;
-  --color-brand-100: #e0e7ff;
-  --color-brand-200: #c7d2fe;
-  --color-brand-500: #6366f1;
-  --color-brand-600: #4f46e5;
-  --color-brand-700: #4338ca;
+  --color-ink: #0f1a2e;
+  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+
+  /* Layered shadows tinted with navy */
+  --shadow-soft: 0 1px 2px rgba(15, 26, 46, 0.05), 0 4px 16px -6px rgba(15, 26, 46, 0.1);
+  --shadow-lift: 0 2px 4px rgba(15, 26, 46, 0.05), 0 18px 36px -14px rgba(20, 45, 110, 0.28);
+  --shadow-glow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 8px 20px -6px rgba(36, 86, 224, 0.55);
+
+  /* Cool neutrals */
+  --color-slate-50: #f5f7fb;
+  --color-slate-100: #eef1f7;
+  --color-slate-200: #e1e6ef;
+  --color-slate-300: #c9d1de;
+  --color-slate-400: #98a3b6;
+  --color-slate-500: #677388;
+  --color-slate-600: #4f5a6e;
+  --color-slate-700: #3b4558;
+  --color-slate-800: #273044;
+  --color-slate-900: #0f1a2e;
+  --color-slate-950: #0b1222;
+
+  /* Brand blue */
+  --color-brand-50: #eef4ff;
+  --color-brand-100: #dce7ff;
+  --color-brand-200: #c0d4ff;
+  --color-brand-300: #94b6ff;
+  --color-brand-400: #5f8ffb;
+  --color-brand-500: #3a6ef2;
+  --color-brand-600: #2456e0;
+  --color-brand-700: #1d45bd;
+  --color-brand-800: #1c3b95;
+  --color-brand-900: #0f1f4d;
+
+  /* Azure accent */
+  --color-sky-50: #edf9ff;
+  --color-sky-100: #d6f0ff;
+  --color-sky-200: #b0e3ff;
+  --color-sky-300: #7ad0fd;
+  --color-sky-400: #3db6f6;
+  --color-sky-500: #149be0;
+  --color-sky-600: #087cbf;
+  --color-sky-700: #09639a;
+  --color-sky-800: #0d537f;
+  --color-sky-900: #0b2f4a;
+
+  /* Warm sand / apricot — pending, highlights, certificates */
+  --color-amber-50: #fcf6ee;
+  --color-amber-100: #f6e8d3;
+  --color-amber-200: #eed5b3;
+  --color-amber-300: #e4bd8c;
+  --color-amber-400: #d9a66a;
+  --color-amber-500: #c98f50;
+  --color-amber-600: #a9743d;
+  --color-amber-700: #875c31;
+  --color-amber-800: #6b4828;
+  --color-amber-900: #4a3020;
+
+  /* Rose — errors, destructive actions, counters */
+  --color-rose-50: #fdf2f3;
+  --color-rose-100: #fbe1e4;
+  --color-rose-200: #f6c4ca;
+  --color-rose-300: #ee9aa4;
+  --color-rose-400: #e26e7c;
+  --color-rose-500: #d14a5c;
+  --color-rose-600: #b33449;
+  --color-rose-700: #93283b;
+  --color-rose-800: #752233;
+  --color-rose-900: #4d1722;
+
+  --color-indigo-500: #3a6ef2;
+  --color-indigo-600: #2456e0;
+  --color-black: #0f1a2e;
 }
 
 body {
-  background: var(--background);
+  position: relative;
+  background: oklch(95.5% 0.008 200);
   color: var(--foreground);
+  font-weight: 400;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * App background (fixed layer, works on iOS too): warm off-white in the
+ * top-left drifting into a cool, faintly mint-grey in the bottom-right.
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(155deg, oklch(97.5% 0.006 85) 0%, oklch(95.5% 0.008 200) 60%, oklch(92.5% 0.014 210) 100%);
+}
+
+/* Montserrat SemiBold — headings, Montserrat Regular — text */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: #c0d4ff;
+  color: var(--ink);
 }
 
 @utility card {
-  @apply rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)];
+  @apply rounded-2xl border border-white/70 bg-white/90 shadow-soft ring-1 ring-slate-200/70 transition-shadow;
 }
 
+/* Buttons: ≥44px tap targets on phones, compact on desktop */
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 sm:min-h-10;
 }
 
+/*
+ * Primary: minimal black button with a soft, blurred glow in the client's mint
+ * (#9FB7BA / #7F9CA0) rising from the lower-right corner. On hover the glow
+ * spreads a little and the button lifts.
+ */
 @utility btn-primary {
-  @apply btn bg-brand-600 text-white hover:bg-brand-700;
+  @apply btn relative isolate overflow-hidden text-white;
+  background: linear-gradient(180deg, #1d2225 0%, #0e1113 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px #0b0d0f,
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 8px 18px -8px rgba(15, 20, 24, 0.55);
+
+  /* blurred mint glow */
+  &::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    right: -15%;
+    bottom: -120%;
+    width: 75%;
+    height: 200%;
+    border-radius: 9999px;
+    background: radial-gradient(closest-side, rgba(159, 183, 186, 0.55), rgba(127, 156, 160, 0.25) 55%, transparent 100%);
+    filter: blur(14px);
+    opacity: 0.75;
+    transition:
+      opacity 0.4s ease,
+      transform 0.4s ease;
+    pointer-events: none;
+  }
+  &:hover:not(:disabled) {
+    translate: 0 -1px;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 0 0 1px #0b0d0f,
+      0 2px 4px rgba(0, 0, 0, 0.25),
+      0 12px 24px -10px rgba(15, 20, 24, 0.6),
+      0 8px 22px -12px rgba(127, 156, 160, 0.55);
+  }
+  &:hover:not(:disabled)::before {
+    opacity: 1;
+    transform: translate(-12%, -10%) scale(1.15);
+  }
+  &:active:not(:disabled) {
+    translate: 0 0;
+    box-shadow:
+      inset 0 1px 3px rgba(0, 0, 0, 0.5),
+      0 0 0 1px #0b0d0f;
+  }
 }
 
+/* Secondary: clean white with a hairline border */
 @utility btn-secondary {
-  @apply btn border border-slate-200 bg-white text-slate-700 hover:bg-slate-50;
+  @apply btn border border-slate-200 bg-white text-slate-800 shadow-soft hover:-translate-y-px hover:border-slate-300 hover:text-ink hover:shadow-[0_8px_18px_-10px_rgba(15,26,46,0.35)];
 }
 
 @utility btn-ghost {
-  @apply btn text-slate-600 hover:bg-slate-100;
+  @apply btn text-slate-700 hover:bg-slate-100 hover:text-ink;
 }
 
 @utility btn-danger {
-  @apply btn bg-rose-600 text-white hover:bg-rose-700;
+  @apply btn text-white hover:-translate-y-px hover:brightness-105;
+  background: linear-gradient(180deg, #e76576 0%, #d14a5c 50%, #b33449 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -2px 0 rgba(90, 15, 30, 0.2),
+    0 8px 20px -8px rgba(179, 52, 73, 0.65);
 }
 
 @utility btn-sm {
-  @apply rounded-lg px-3 py-1.5 text-xs;
+  @apply min-h-9 rounded-lg px-3 py-1.5 text-xs sm:min-h-8;
 }
 
+/* 16px text on phones prevents iOS from zooming into focused fields */
 @utility input {
-  @apply block w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 focus:outline-none;
+  @apply block w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-900 shadow-[inset_0_1px_2px_rgba(15,26,46,0.04)] placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100 focus:outline-none sm:text-sm;
 }
 
 @utility label {
-  @apply mb-1.5 block text-sm font-medium text-slate-700;
+  @apply mb-1.5 block text-sm text-slate-700;
 }
 
 @utility hint {
@@ -63,7 +229,34 @@ body {
 }
 
 @utility link {
-  @apply font-medium text-brand-600 hover:text-brand-700 hover:underline;
+  @apply text-brand-700 underline decoration-brand-300 decoration-2 underline-offset-4 transition-colors hover:text-brand-600 hover:decoration-brand-500;
+}
+
+/* Neutral link: dark text with a grey underline, no brand colour */
+@utility link-plain {
+  @apply text-slate-800 underline decoration-slate-300 decoration-1 underline-offset-4 transition-colors hover:text-ink hover:decoration-slate-600;
+}
+
+/*
+ * Brushed-steel text, matching the silver logo emblem: light-to-graphite chrome
+ * bands with a sharp dark "horizon" in the middle and a thin light emboss edge.
+ * Kept dark enough to stay readable on the light background.
+ */
+@utility text-metal {
+  background-image: linear-gradient(
+    180deg,
+    #8a919b 0%,
+    #5d646e 30%,
+    #2b2f36 49%,
+    #1a1d22 51%,
+    #464c55 68%,
+    #7d848e 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.9)) drop-shadow(0 1px 1px rgba(15, 26, 46, 0.18));
 }
 
 @layer components {
@@ -78,16 +271,25 @@ body {
     @apply mt-6 mb-2 font-semibold text-slate-900;
   }
   .prose-lesson ul {
-    @apply my-3 list-disc pl-6;
+    @apply my-3 list-disc pl-6 marker:text-brand-600;
   }
   .prose-lesson ol {
-    @apply my-3 list-decimal pl-6;
+    @apply my-3 list-decimal pl-6 marker:text-brand-600;
   }
   .prose-lesson a {
-    @apply font-medium text-brand-600 underline;
+    @apply text-brand-700 underline decoration-brand-300 decoration-2 underline-offset-4;
   }
   .prose-lesson code {
-    @apply rounded bg-slate-100 px-1.5 py-0.5 text-[13px];
+    @apply rounded bg-brand-50 px-1.5 py-0.5 text-[13px] text-brand-800;
+  }
+}
+
+/* Horizontal scroll strip without a visible scrollbar (tabs, filters on phones) */
+@utility scroll-strip {
+  @apply -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
   }
 }
 
@@ -98,4 +300,11 @@ body {
   body {
     background: #fff;
   }
+  body::before {
+    display: none;
+  }
 }
+
+
+
+

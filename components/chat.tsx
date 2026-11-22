@@ -92,7 +92,7 @@ export function Chat({
   }
 
   return (
-    <div className="card flex h-[calc(100vh-14rem)] min-h-[420px] flex-col overflow-hidden">
+    <div className="card flex h-[calc(100dvh-15rem)] lg:h-[calc(100dvh-14rem)] min-h-[420px] flex-col overflow-hidden">
       <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50/50 p-4 sm:p-6">
         {messages.length === 0 && <p className="text-center text-sm text-slate-400">Сообщений пока нет</p>}
         {messages.map((m) => {
@@ -103,14 +103,14 @@ export function Chat({
               <div className={cx("max-w-[80%] sm:max-w-[70%]", mine && "text-right")}>
                 <p className="mb-1 text-[11px] text-slate-500">
                   {m.senderName}
-                  {m.staff && !viewerIsStaff && <span className="ml-1 text-emerald-600">· поддержка</span>}
-                  {!m.staff && viewerIsStaff && <span className="ml-1 text-brand-600">· студент</span>}
+                  {m.staff && !viewerIsStaff && <span className="ml-1 text-brand-700">· поддержка</span>}
+                  {!m.staff && viewerIsStaff && <span className="ml-1 text-brand-700">· студент</span>}
                   <span className="ml-1">· {time(m.createdAt)}</span>
                 </p>
                 <div
                   className={cx(
                     "inline-block rounded-2xl px-4 py-2.5 text-left text-sm break-words whitespace-pre-wrap",
-                    mine ? "rounded-br-md bg-brand-600 text-white" : "rounded-bl-md border border-slate-200 bg-white text-slate-800",
+                    mine ? "rounded-br-md bg-gradient-to-br from-brand-300 to-brand-500 text-ink shadow-soft" : "rounded-bl-md border border-slate-200 bg-white text-slate-800",
                   )}
                 >
                   {m.body}

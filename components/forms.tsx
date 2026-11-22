@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import type { ActionState } from "@/lib/action-state";
 import { cx } from "@/components/ui";
+import { requestNavCountersRefresh } from "@/components/nav-counters";
 
 export function SubmitButton({
   children,
@@ -52,6 +53,8 @@ export function ActionForm({
   const ref = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (resetOnSuccess && state.ok) ref.current?.reset();
+    // e.g. an assignment was reviewed or a certificate uploaded — update the menu badges
+    if (state.ok) requestNavCountersRefresh();
   }, [state, resetOnSuccess]);
   return (
     <form ref={ref} action={formAction} className={className} encType={encType}>
@@ -61,7 +64,7 @@ export function ActionForm({
         </div>
       )}
       {state.ok && state.message && (
-        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
+        <div className="mb-4 rounded-xl border border-brand-300 bg-brand-100 px-4 py-3 text-sm text-brand-800" role="status">
           {state.message}
         </div>
       )}
@@ -146,7 +149,7 @@ export function Toggle({
   return (
     <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50">
       <input type="checkbox" name={name} defaultChecked={defaultChecked} className="peer sr-only" />
-      <span className="relative mt-0.5 h-5 w-9 shrink-0 rounded-full bg-slate-300 transition peer-checked:bg-brand-600 after:absolute after:top-0.5 after:left-0.5 after:size-4 after:rounded-full after:bg-white after:transition peer-checked:after:translate-x-4" />
+      <span className="relative mt-0.5 h-5 w-9 shrink-0 rounded-full bg-slate-300 transition peer-checked:bg-gradient-to-r peer-checked:from-brand-400 peer-checked:to-brand-600 after:shadow-sm peer-focus-visible:ring-4 peer-focus-visible:ring-brand-100 after:absolute after:top-0.5 after:left-0.5 after:size-4 after:rounded-full after:bg-white after:transition peer-checked:after:translate-x-4" />
       <span>
         <span className="block text-sm font-medium text-slate-800">{label}</span>
         {hint && <span className="block text-xs text-slate-500">{hint}</span>}

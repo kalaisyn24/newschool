@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { Logo } from "@/components/logo";
 import { MobileNav, NavLinks, type NavItem } from "@/components/nav-links";
+import { NavCountersProvider } from "@/components/nav-counters";
 import { Avatar, Skeleton } from "@/components/ui";
 import { Icon } from "@/components/icons";
 import { getCurrentUser } from "@/lib/auth";
@@ -13,17 +14,20 @@ export function AppShell({
   nav,
   areaLabel,
   homeHref,
+  counters = false,
   children,
 }: {
   nav: NavItem[];
   areaLabel?: string;
   homeHref: string;
+  /** Show badges with pending-item counts next to menu items. */
+  counters?: boolean;
   children: ReactNode;
 }) {
   const brand = (
     <Link href={homeHref} className="flex items-center gap-2">
       <Logo />
-      {areaLabel && <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 uppercase">{areaLabel}</span>}
+      {areaLabel && <span className="rounded-md bg-gradient-to-r from-brand-100 to-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-brand-800 uppercase">{areaLabel}</span>}
     </Link>
   );
   const userBox = (
@@ -32,8 +36,9 @@ export function AppShell({
     </Suspense>
   );
   return (
+    <NavCountersProvider enabled={counters}>
     <div className="min-h-screen lg:grid lg:grid-cols-[260px_1fr]">
-      <aside className="no-print sticky top-0 hidden h-screen flex-col border-r border-slate-200 bg-white px-4 py-5 lg:flex">
+      <aside className="no-print sticky top-0 hidden h-screen flex-col border-r border-white/70 bg-white/75 px-4 py-5 shadow-soft backdrop-blur-xl lg:flex">
         <div className="mb-6 px-1">{brand}</div>
         <div className="flex-1 overflow-y-auto">
           <NavLinks items={nav} />
@@ -41,10 +46,11 @@ export function AppShell({
         <div className="border-t border-slate-100 pt-3">{userBox}</div>
       </aside>
       <MobileNav items={nav} header={brand} footer={userBox} />
-      <main className="min-w-0 px-4 py-6 sm:px-8 lg:py-8">
+      <main className="min-w-0 px-4 pt-5 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-8 sm:pt-6 lg:py-8">
         <div className="mx-auto max-w-6xl">{children}</div>
       </main>
     </div>
+    </NavCountersProvider>
   );
 }
 
@@ -56,7 +62,7 @@ async function UserBox() {
       <div className="flex items-center gap-3 px-1">
         <Avatar name={user.name} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-slate-900">{user.name}</p>
+          <p className="truncate text-sm font-semibold text-slate-900">{user.name}</p>
           <p className="truncate text-xs text-slate-500">{roleLabel[user.role]}</p>
         </div>
       </div>
@@ -72,7 +78,7 @@ async function UserBox() {
           <Link href="/support" className="btn-ghost btn-sm">Поддержка</Link>
         )}
         <form action={logout}>
-          <button className="btn-ghost btn-sm text-rose-600 hover:bg-rose-50">
+          <button className="btn-ghost btn-sm text-slate-900 hover:bg-slate-100">
             <Icon name="logout" className="size-4" /> Выйти
           </button>
         </form>

@@ -60,12 +60,12 @@ export default async function SupportInbox({ searchParams }: PageProps<"/support
         <StatCard label="Без ответственного" value={unassigned} />
       </div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
+        <div className="scroll-strip w-full sm:w-auto">
           {filters.map((f) => (
             <Link
               key={f.key}
               href={`/support?filter=${f.key}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-              className={`rounded-full px-3.5 py-1.5 text-sm font-medium ${filter === f.key ? "bg-slate-900 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"}`}
+              className={`shrink-0 rounded-full px-3.5 py-2 text-sm whitespace-nowrap ${filter === f.key ? "bg-ink text-white shadow-soft" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"}`}
             >
               {f.label}
             </Link>

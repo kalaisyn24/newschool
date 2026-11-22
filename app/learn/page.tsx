@@ -34,9 +34,9 @@ export default async function LearnHome() {
 
   return (
     <div className="space-y-8">
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-indigo-600 to-violet-600 p-6 text-white sm:p-8">
-        <div className="absolute -top-10 -right-10 size-48 rounded-full bg-white/10" />
-        <div className="absolute right-24 -bottom-16 size-40 rounded-full bg-white/10" />
+      <div className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#0b1633_0%,#15306f_45%,#2456e0_100%)] p-5 text-white shadow-lift sm:p-8">
+        <div className="absolute -top-16 -right-10 size-56 rounded-full bg-sky-400/30 blur-3xl" />
+        <div className="absolute right-32 -bottom-20 size-48 rounded-full bg-brand-400/40 blur-3xl" />
         <p className="relative text-sm text-white/80">{greeting()},</p>
         <h1 className="relative mt-1 text-2xl font-semibold sm:text-3xl">{firstName}! Рады видеть вас снова 👋</h1>
         <p className="relative mt-2 max-w-xl text-sm text-white/80">
@@ -45,7 +45,7 @@ export default async function LearnHome() {
             : "Выберите курс в каталоге и начните обучение."}
         </p>
         {last && (
-          <Link href={`/learn/lessons/${last.lesson.id}`} className="btn relative mt-5 bg-white text-brand-700 hover:bg-brand-50">
+          <Link href={`/learn/lessons/${last.lesson.id}`} className="btn relative mt-5 w-full bg-white text-ink shadow-[0_10px_24px_-10px_rgba(0,0,0,0.5)] hover:bg-amber-50 sm:w-auto">
             <Icon name="play" className="size-4" /> Продолжить обучение
           </Link>
         )}
@@ -71,7 +71,7 @@ export default async function LearnHome() {
         <section className="lg:col-span-2">
           <SectionTitle>Продолжить обучение</SectionTitle>
           {last ? (
-            <Link href={`/learn/lessons/${last.lesson.id}`} className="card flex items-center gap-4 p-4 transition hover:border-brand-200 hover:shadow-md">
+            <Link href={`/learn/lessons/${last.lesson.id}`} className="card flex items-center gap-4 p-4 transition hover:-translate-y-0.5 hover:shadow-lift">
               <CourseCover url={last.lesson.module.course.coverUrl} title={last.lesson.module.course.title} className="aspect-video !w-36 shrink-0 rounded-xl sm:!w-44" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs text-slate-500">
@@ -81,7 +81,7 @@ export default async function LearnHome() {
                 <p className="mt-1 text-xs text-slate-500">Последний просмотр: {formatDateTime(last.lastViewedAt)}</p>
                 {last.videoDuration > 0 && <ProgressBar value={last.videoPercent} size="sm" className="mt-2 max-w-xs" />}
               </div>
-              <span className="hidden size-11 shrink-0 place-items-center rounded-full bg-brand-600 text-white sm:grid">
+              <span className="hidden size-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-300 to-brand-600 text-ink shadow-glow sm:grid">
                 <Icon name="play" className="size-4" />
               </span>
             </Link>
@@ -109,7 +109,7 @@ export default async function LearnHome() {
             ))}
           </div>
           <Link href="/learn/support" className="card mt-4 flex items-center gap-3 p-4 transition hover:border-brand-200">
-            <span className="grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-600">
+            <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-sky-100 to-sky-200 text-sky-700">
               <Icon name="chat" />
             </span>
             <span>

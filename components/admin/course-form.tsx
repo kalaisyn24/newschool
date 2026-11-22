@@ -72,7 +72,7 @@ export function CourseForm({
             <div className="space-y-2">
               <Toggle name="published" defaultChecked={course.published} label="Опубликован" hint="Курс виден студентам" />
               <Toggle name="sequential" defaultChecked={course.sequential} label="Последовательное прохождение" hint="Следующий урок открывается после выполнения условий предыдущего" />
-              <Toggle name="certificateEnabled" defaultChecked={course.certificateEnabled} label="Выдавать сертификат" hint="После завершения всех уроков" />
+              <Toggle name="certificateEnabled" defaultChecked={course.certificateEnabled} label="Выдавать сертификат" hint="После завершения всех уроков администратор получит уведомление и загрузит PDF" />
               <Field label="Доступ к курсу">
                 <select name="access" defaultValue={course.access} className="input">
                   <option value="BY_GRANT">Только по доступу от администратора</option>

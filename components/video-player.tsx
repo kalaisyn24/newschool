@@ -252,12 +252,12 @@ export function VideoPlayer({
         <div className="flex min-w-48 flex-1 items-center gap-2">
           <span>Просмотрено {percent}%</span>
           <div className="h-1.5 max-w-48 flex-1 overflow-hidden rounded-full bg-slate-200">
-            <div className={`h-full ${done ? "bg-emerald-500" : "bg-brand-500"}`} style={{ width: `${percent}%` }} />
+            <div className={`h-full ${done ? "bg-brand-600" : "bg-brand-400"}`} style={{ width: `${percent}%` }} />
           </div>
         </div>
         {requireVideo &&
           (done ? (
-            <span className="font-medium text-emerald-600">✓ Видео просмотрено</span>
+            <span className="font-medium text-brand-700">✓ Видео просмотрено</span>
           ) : (
             <span>Для завершения урока посмотрите не менее {requiredPct}% видео</span>
           ))}

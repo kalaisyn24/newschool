@@ -19,8 +19,8 @@ const features: { icon: IconName; title: string; text: string }[] = [
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col bg-white">
-      <header className="sticky top-0 z-20 border-b border-slate-100 bg-white/85 backdrop-blur">
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-20 border-b border-white/60 bg-white/70 shadow-soft backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
           <Logo />
           <Suspense fallback={<Skeleton className="h-10 w-40" />}>
@@ -30,14 +30,15 @@ export default function Home() {
       </header>
 
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-brand-50 via-white to-white" />
-        <div className="absolute -top-32 -right-32 size-[480px] rounded-full bg-violet-200/40 blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-b from-brand-50/80 via-white/40 to-transparent" />
+        <div className="absolute -top-32 -right-32 size-[480px] rounded-full bg-sky-400/30 blur-3xl" />
+        <div className="absolute top-40 -left-40 size-[420px] rounded-full bg-brand-300/40 blur-3xl" />
         <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
           <p className="inline-flex rounded-full bg-white px-3 py-1 text-xs font-medium text-brand-700 shadow-sm ring-1 ring-brand-100">
             Дистанционное обучение
           </p>
           <h1 className="mt-5 max-w-3xl text-4xl leading-tight font-semibold tracking-tight text-slate-900 sm:text-6xl">
-            Учитесь онлайн по видеокурсам — <span className="text-brand-600">в удобном темпе</span>
+            Учитесь онлайн по видеокурсам — в удобном темпе
           </h1>
           <p className="mt-5 max-w-2xl text-lg text-slate-600">
             Видеоуроки, материалы, тесты и практические задания в одном личном кабинете. Прогресс сохраняется автоматически.
@@ -52,8 +53,8 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((f) => (
-            <div key={f.title} className="rounded-2xl border border-slate-100 bg-slate-50/50 p-6">
-              <span className="grid size-11 place-items-center rounded-xl bg-white text-brand-600 shadow-sm ring-1 ring-slate-100">
+            <div key={f.title} className="card p-6 transition hover:-translate-y-0.5 hover:shadow-lift">
+              <span className="grid size-11 place-items-center rounded-xl bg-gradient-to-br from-brand-100 to-sky-100 text-brand-800 shadow-soft">
                 <Icon name={f.icon} />
               </span>
               <p className="mt-4 font-semibold text-slate-900">{f.title}</p>
@@ -78,7 +79,7 @@ export default function Home() {
       </section>
 
       <footer className="mt-auto border-t border-slate-100 py-8 text-center text-sm text-slate-400">
-        © Онлайн-школа · <Link href="/login" className="hover:text-slate-600">Вход</Link> · <Link href="/register" className="hover:text-slate-600">Регистрация</Link>
+        © PrideX · <Link href="/login" className="hover:text-slate-600">Вход</Link> · <Link href="/register" className="hover:text-slate-600">Регистрация</Link>
       </footer>
     </div>
   );
@@ -116,7 +117,7 @@ async function PublicCourses() {
       {courses.map((c) => {
         const lessons = c.modules.flatMap((m) => m.lessons);
         return (
-          <Link key={c.id} href={`/learn/courses/${c.id}`} className="card group overflow-hidden transition hover:shadow-lg">
+          <Link key={c.id} href={`/learn/courses/${c.id}`} className="card group overflow-hidden transition duration-300 hover:-translate-y-1 hover:shadow-lift">
             <CourseCover url={c.coverUrl} title={c.title} className="aspect-[16/9]" />
             <div className="p-5">
               <p className="font-semibold text-slate-900 group-hover:text-brand-700">{c.title}</p>

@@ -13,6 +13,7 @@ export const activityLabels: Record<string, string> = {
   test_passed: "Тест сдан",
   test_failed: "Тест не сдан",
   assignment_submitted: "Отправлено задание",
+  certificate_issued: "Получен сертификат",
 };
 
 export function activityLabel(action: string) {

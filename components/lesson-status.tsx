@@ -22,7 +22,7 @@ export function LessonStatusIcon({ status, index }: { status: LessonStatus; inde
       </span>
     );
   return (
-    <span className="grid size-8 shrink-0 place-items-center rounded-full border-2 border-brand-500 text-xs font-semibold text-brand-600">
+    <span className="grid size-8 shrink-0 place-items-center rounded-full border-2 border-brand-500 text-xs font-semibold text-brand-700">
       {index ?? <Icon name="play" className="size-3" />}
     </span>
   );

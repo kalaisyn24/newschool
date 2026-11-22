@@ -4,6 +4,8 @@ import { requireLearner } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatDate } from "@/lib/format";
 import { PrintButton } from "@/components/print-button";
+import { Icon } from "@/components/icons";
+import { EmptyState } from "@/components/ui";
 
 export default async function CertificatePage({ params }: PageProps<"/learn/certificates/[id]">) {
   const user = await requireLearner();
@@ -14,10 +16,49 @@ export default async function CertificatePage({ params }: PageProps<"/learn/cert
   });
   if (!cert || (cert.userId !== user.id && user.role !== "ADMIN")) notFound();
 
+  const back = <Link href="/learn/certificates" className="text-sm text-slate-500 hover:text-slate-800">← Все сертификаты</Link>;
+
+  // Waiting for the administrator to upload the PDF
+  if (!cert.issuedAt) {
+    return (
+      <div className="space-y-4">
+        {back}
+        <EmptyState
+          title="Сертификат готовится"
+          text={`Вы завершили курс «${cert.course.title}» ${formatDate(cert.createdAt)}. Администратор загрузит сертификат в ближайшее время — вы получите уведомление.`}
+        />
+      </div>
+    );
+  }
+
+  // Uploaded PDF certificate
+  if (cert.fileKey) {
+    const url = `/api/certificates/${cert.id}`;
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {back}
+          <div className="flex gap-2">
+            <a href={url} target="_blank" rel="noreferrer" className="btn-secondary">Открыть в новой вкладке</a>
+            <a href={`${url}?download`} className="btn-primary">
+              <Icon name="file" className="size-4" /> Скачать PDF
+            </a>
+          </div>
+        </div>
+        <div>
+          <h1 className="text-xl font-semibold text-slate-900">«{cert.course.title}»</h1>
+          <p className="text-sm text-slate-500">№ {cert.number} · выдан {formatDate(cert.issuedAt)}</p>
+        </div>
+        <iframe src={url} title={`Сертификат ${cert.number}`} className="h-[80vh] w-full rounded-2xl border border-slate-200 bg-white" />
+      </div>
+    );
+  }
+
+  // Legacy certificates issued automatically before PDF upload was introduced
   return (
     <div className="space-y-4">
       <div className="no-print flex flex-wrap items-center justify-between gap-2">
-        <Link href="/learn/certificates" className="text-sm text-slate-500 hover:text-slate-800">← Все сертификаты</Link>
+        {back}
         <PrintButton />
       </div>
       <div className="mx-auto aspect-[1.414] w-full max-w-4xl overflow-hidden rounded-2xl bg-white p-3 shadow-lg print:shadow-none">

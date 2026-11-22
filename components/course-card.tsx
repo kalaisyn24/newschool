@@ -19,9 +19,9 @@ export function CourseCard({ course }: { course: MyCourse }) {
     course.status === "available" ? "Начать обучение" : course.status === "completed" ? "Повторить" : "Продолжить";
   const target = course.status === "in_progress" && course.nextLessonId ? `/learn/lessons/${course.nextLessonId}` : `/learn/courses/${course.id}`;
   return (
-    <div className={`card group flex flex-col overflow-hidden ${blocked ? "opacity-70" : ""}`}>
-      <Link href={`/learn/courses/${course.id}`} className="relative block">
-        <CourseCover url={course.coverUrl} title={course.title} className="aspect-[16/9]" />
+    <div className={`card group flex flex-col overflow-hidden transition duration-300 hover:-translate-y-1 hover:shadow-lift ${blocked ? "opacity-70" : ""}`}>
+      <Link href={`/learn/courses/${course.id}`} className="relative block overflow-hidden">
+        <CourseCover url={course.coverUrl} title={course.title} className="aspect-[16/9] transition duration-500 group-hover:scale-[1.03]" />
         <Badge tone={meta.tone} className="absolute top-3 left-3 shadow-sm">
           {meta.label}
         </Badge>

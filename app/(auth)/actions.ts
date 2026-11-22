@@ -56,7 +56,7 @@ export async function register(_: ActionState, fd: FormData): Promise<ActionStat
   await db.notification.create({
     data: {
       userId: user.id,
-      title: "Добро пожаловать в онлайн-школу!",
+      title: "Добро пожаловать в PrideX!",
       body: "Здесь будут появляться уведомления о курсах, тестах и ответах поддержки.",
     },
   });

@@ -92,7 +92,7 @@ export function QuestionEditor({
               value={o.text}
               onChange={(e) => setOptions((prev) => prev.map((x, k) => (k === i ? { ...x, text: e.target.value } : x)))}
               placeholder={`Вариант ${i + 1}`}
-              className={`input py-2 ${o.isCorrect ? "border-emerald-300 bg-emerald-50/40" : ""}`}
+              className={`input py-2 ${o.isCorrect ? "border-brand-600 bg-brand-50" : ""}`}
             />
             <button
               type="button"

@@ -17,7 +17,7 @@ function layout(title: string, body: string) {
   return `<!doctype html><html><body style="margin:0;background:#f4f5fb;font-family:Arial,sans-serif;color:#1f2333">
 <div style="max-width:560px;margin:24px auto;background:#fff;border-radius:12px;padding:28px">
 <h2 style="margin:0 0 16px;color:#4338ca">${title}</h2>${body}
-<p style="margin-top:28px;color:#8a8fa3;font-size:12px">Это автоматическое письмо онлайн-школы. Если вы не совершали это действие, просто проигнорируйте его.</p>
+<p style="margin-top:28px;color:#8a8fa3;font-size:12px">Это автоматическое письмо онлайн-школы PrideX. Если вы не совершали это действие, просто проигнорируйте его.</p>
 </div></body></html>`;
 }
 
@@ -61,6 +61,6 @@ export const mails = {
   changeEmail: (name: string, link: string) =>
     layout(
       "Смена e-mail",
-      `<p>Здравствуйте, ${escapeHtml(name)}!</p><p>Подтвердите, что этот адрес будет использоваться для входа в онлайн-школу.</p>${button(link, "Подтвердить новый e-mail")}`,
+      `<p>Здравствуйте, ${escapeHtml(name)}!</p><p>Подтвердите, что этот адрес будет использоваться для входа в PrideX.</p>${button(link, "Подтвердить новый e-mail")}`,
     ),
 };

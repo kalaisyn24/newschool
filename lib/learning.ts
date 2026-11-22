@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
-import { notify, logActivity } from "@/lib/activity";
+import { notify, notifyAdmins, logActivity } from "@/lib/activity";
 import { randomToken } from "@/lib/crypto";
 
 export type LessonStatus = "completed" | "available" | "locked";
@@ -193,27 +193,51 @@ export async function recomputeCourse(userId: string, courseId: string) {
   if (!state || state.total === 0 || state.completedCount < state.total) return;
   await db.enrollment.update({ where: { id: enrollment.id }, data: { completedAt: new Date() } });
   await logActivity(userId, "course_completed", state.course.title, `/learn/courses/${courseId}`);
-  let link = `/learn/courses/${courseId}`;
-  if (state.course.certificateEnabled) {
-    const cert = await issueCertificate(userId, courseId);
-    link = `/learn/certificates/${cert.id}`;
+  if (!state.course.certificateEnabled) {
+    await notify(
+      userId,
+      `Курс «${state.course.title}» пройден!`,
+      "Поздравляем с успешным завершением курса.",
+      `/learn/courses/${courseId}`,
+    );
+    return;
+  }
+
+  const { certificate, created } = await requestCertificate(userId, courseId);
+  if (certificate.issuedAt) {
+    // The certificate was already issued earlier (e.g. progress was reset and the course re-completed).
+    await notify(
+      userId,
+      `Курс «${state.course.title}» пройден!`,
+      "Поздравляем! Ваш сертификат доступен в разделе «Сертификаты».",
+      `/learn/certificates/${certificate.id}`,
+    );
+    return;
   }
   await notify(
     userId,
     `Курс «${state.course.title}» пройден!`,
-    state.course.certificateEnabled
-      ? "Поздравляем! Ваш сертификат готов — его можно открыть и распечатать."
-      : "Поздравляем с успешным завершением курса.",
-    link,
+    "Поздравляем! Сертификат готовится администратором — мы сообщим, как только он будет загружен.",
+    `/learn/certificates`,
   );
+  if (created) {
+    const student = await db.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
+    await notifyAdmins(
+      `Нужен сертификат: ${student?.name ?? "студент"} — «${state.course.title}»`,
+      `Студент ${student?.name ?? ""} (${student?.email ?? ""}) завершил курс. Загрузите PDF-сертификат.`,
+      `/admin/certificates`,
+    );
+  }
 }
 
-export async function issueCertificate(userId: string, courseId: string) {
+/** Creates a pending certificate (without a file) for a completed course. Idempotent. */
+export async function requestCertificate(userId: string, courseId: string) {
   const existing = await db.certificate.findUnique({ where: { userId_courseId: { userId, courseId } } });
-  if (existing) return existing;
+  if (existing) return { certificate: existing, created: false };
   const year = new Date().getFullYear();
   const number = `OS-${year}-${randomToken(6).replace(/[^A-Za-z0-9]/g, "").slice(0, 8).toUpperCase()}`;
-  return db.certificate.create({ data: { userId, courseId, number } });
+  const certificate = await db.certificate.create({ data: { userId, courseId, number } });
+  return { certificate, created: true };
 }
 
 /** Mark a lesson as opened: updates last-visit data and completes lessons without conditions. */

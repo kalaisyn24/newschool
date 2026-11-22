@@ -73,7 +73,7 @@ export default async function HistoryPage() {
                   </td>
                   <td className="text-sm">
                     {attempts.length ? (
-                      <span className={p.testPassed ? "text-emerald-600" : "text-slate-600"}>
+                      <span className={p.testPassed ? "text-brand-700" : "text-slate-600"}>
                         {best}% · попыток {attempts.length}
                       </span>
                     ) : (

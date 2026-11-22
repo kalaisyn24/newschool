@@ -25,7 +25,7 @@ export default async function MyCoursesPage({ searchParams }: PageProps<"/learn/
   return (
     <>
       <PageHeader title="Мои курсы" subtitle={`Доступно курсов: ${courses.filter((c) => c.status !== "blocked").length}`} />
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="scroll-strip mb-6">
         {filters.map((f) => {
           const count = f.key === "all" ? courses.length : courses.filter((c) => c.status === f.key).length;
           if (f.key === "blocked" && !count) return null;
@@ -33,8 +33,8 @@ export default async function MyCoursesPage({ searchParams }: PageProps<"/learn/
             <Link
               key={f.key}
               href={f.key === "all" ? "/learn/courses" : `/learn/courses?status=${f.key}`}
-              className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition ${
-                filter === f.key ? "bg-slate-900 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
+              className={`shrink-0 rounded-full px-3.5 py-2 text-sm whitespace-nowrap transition ${
+                filter === f.key ? "bg-ink text-white shadow-soft" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
               }`}
             >
               {f.label} <span className="opacity-60">{count}</span>

@@ -300,9 +300,14 @@ model Certificate {
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   courseId String
   course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  issuedAt DateTime @default(now())
+  // Created when the student completes the course; issued once the admin uploads the PDF.
+  createdAt DateTime  @default(now())
+  issuedAt  DateTime? // null = waiting for the admin to upload the certificate
+  fileKey   String?   @db.VarChar(300) // uploaded PDF in storage
+  fileSize  Int?
 
   @@unique([userId, courseId])
+  @@index([issuedAt])
 }
 
 model ActivityLog {
