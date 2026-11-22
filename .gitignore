@@ -42,3 +42,6 @@ next-env.d.ts
 /lib/generated/
 /storage/
 !.env.example
+
+# GetCourse import data (large files)
+/import/
