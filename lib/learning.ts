@@ -111,29 +111,41 @@ export function courseStatusFor(
   return "available";
 }
 
-/** Resolves a lesson for a student: checks enrollment and lock state. */
-export async function getLessonAccess(userId: string, lessonId: string, opts: { preview?: boolean } = {}) {
+/**
+ * Resolves a lesson for a student: checks enrollment and lock state.
+ * `preview` — the user is staff and may preview lessons. Preview mode (no locks, no tracking) applies only
+ * when the staff member is not actively enrolled in the course, the lesson/course is unpublished,
+ * or `forcePreview` is set; an enrolled admin goes through the course like a regular student.
+ */
+export async function getLessonAccess(
+  userId: string,
+  lessonId: string,
+  opts: { preview?: boolean; forcePreview?: boolean } = {},
+) {
   const lesson = await db.lesson.findUnique({
     where: { id: lessonId },
     select: { id: true, published: true, module: { select: { courseId: true } } },
   });
-  if (!lesson || (!lesson.published && !opts.preview)) return { ok: false as const, reason: "not_found" as const };
+  if (!lesson) return { ok: false as const, reason: "not_found" as const };
   const courseId = lesson.module.courseId;
-  const course = await db.course.findUnique({ where: { id: courseId }, select: { published: true } });
-  if (!opts.preview) {
-    const enrollment = await getEnrollment(userId, courseId);
-    if (!enrollmentIsActive(enrollment) || !course?.published)
-      return { ok: false as const, reason: "no_access" as const, courseId };
-  }
+  const [course, enrollment] = await Promise.all([
+    db.course.findUnique({ where: { id: courseId }, select: { published: true } }),
+    getEnrollment(userId, courseId),
+  ]);
+  const hasAccess = enrollmentIsActive(enrollment) && Boolean(course?.published);
+  const preview = Boolean(opts.preview) && (!hasAccess || !lesson.published || Boolean(opts.forcePreview));
+  if (!lesson.published && !preview) return { ok: false as const, reason: "not_found" as const };
+  if (!hasAccess && !preview) return { ok: false as const, reason: "no_access" as const, courseId };
   const state = await getCourseState(userId, courseId);
   if (!state) return { ok: false as const, reason: "not_found" as const };
   const flat = state.modules.flatMap((m) => m.lessons.map((l) => ({ ...l, moduleTitle: m.title })));
   const index = flat.findIndex((l) => l.id === lessonId);
   const entry = flat[index];
-  if (!entry && !opts.preview) return { ok: false as const, reason: "not_found" as const };
-  if (entry?.status === "locked" && !opts.preview) return { ok: false as const, reason: "locked" as const, courseId };
+  if (!entry && !preview) return { ok: false as const, reason: "not_found" as const };
+  if (entry?.status === "locked" && !preview) return { ok: false as const, reason: "locked" as const, courseId };
   return {
     ok: true as const,
+    preview,
     courseId,
     state,
     entry,

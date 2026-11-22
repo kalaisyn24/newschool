@@ -48,7 +48,7 @@ export default async function LessonEditorPage({ params }: PageProps<"/admin/les
         actions={
           <>
             {!lesson.published && <Badge tone="amber">Скрыт</Badge>}
-            <Link href={`/learn/lessons/${lesson.id}`} target="_blank" className="btn-secondary">Предпросмотр</Link>
+            <Link href={`/learn/lessons/${lesson.id}?preview=1`} target="_blank" className="btn-secondary">Предпросмотр</Link>
           </>
         }
       />

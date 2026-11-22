@@ -15,17 +15,19 @@ import { formatBytes, formatDateTime, formatDuration } from "@/lib/format";
 import { submitAssignment } from "../../actions";
 import { submitTest } from "./actions";
 
-export default async function LessonPage({ params }: PageProps<"/learn/lessons/[lessonId]">) {
+export default async function LessonPage({ params, searchParams }: PageProps<"/learn/lessons/[lessonId]">) {
   const user = await requireLearner();
   const { lessonId } = await params;
-  const isAdmin = user.role === "ADMIN";
-  const gate = await getLessonAccess(user.id, lessonId, { preview: isAdmin });
+  const forcePreview = (await searchParams).preview === "1";
+  const gate = await getLessonAccess(user.id, lessonId, { preview: user.role === "ADMIN", forcePreview });
   if (!gate.ok) {
     if (gate.reason === "not_found") notFound();
     redirect(gate.courseId ? `/learn/courses/${gate.courseId}` : "/learn/courses");
   }
+  // staff preview (not enrolled, unpublished, or ?preview=1): no locks and no progress tracking
+  const isAdmin = gate.preview;
 
-  // record the visit (admins preview without tracking); may complete a lesson without conditions
+  // record the visit; may complete a lesson without conditions
   if (!isAdmin) await touchLesson(user.id, lessonId, gate.courseId);
   const fresh = isAdmin ? gate : await getLessonAccess(user.id, lessonId);
   const access = fresh.ok ? fresh : gate;
@@ -63,7 +65,7 @@ export default async function LessonPage({ params }: PageProps<"/learn/lessons/[
   const test = lesson.test && lesson.test.questions.length > 0 ? lesson.test : null;
   const attemptsLeft = test?.maxAttempts ? Math.max(0, test.maxAttempts - attempts.length) : null;
   const bestScore = attempts.reduce((m, a) => Math.max(m, a.score), 0);
-  const nextOpen = next && (next.status !== "locked" || completed || isAdmin);
+  const nextOpen = next && (next.status !== "locked" || isAdmin);
   let n = 0;
 
   return (
