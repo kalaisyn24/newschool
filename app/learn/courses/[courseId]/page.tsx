@@ -120,7 +120,7 @@ export default async function CoursePage({ params }: PageProps<"/learn/courses/[
                 <ul className="divide-y divide-slate-100">
                   {m.lessons.map((l) => {
                     n++;
-                    const st = canOpen ? (isStaff && !hasAccess ? "available" : l.status) : "locked";
+                    const st = canOpen ? (isStaff && l.status === "locked" ? "available" : l.status) : "locked";
                     const clickable = st !== "locked";
                     const inner = (
                       <>

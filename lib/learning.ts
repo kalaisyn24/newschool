@@ -113,15 +113,9 @@ export function courseStatusFor(
 
 /**
  * Resolves a lesson for a student: checks enrollment and lock state.
- * `preview` — the user is staff and may preview lessons. Preview mode (no locks, no tracking) applies only
- * when the staff member is not actively enrolled in the course, the lesson/course is unpublished,
- * or `forcePreview` is set; an enrolled admin goes through the course like a regular student.
+ * `preview` — the user is an admin: any lesson opens (locked, unpublished, without enrollment).
  */
-export async function getLessonAccess(
-  userId: string,
-  lessonId: string,
-  opts: { preview?: boolean; forcePreview?: boolean } = {},
-) {
+export async function getLessonAccess(userId: string, lessonId: string, opts: { preview?: boolean } = {}) {
   const lesson = await db.lesson.findUnique({
     where: { id: lessonId },
     select: { id: true, published: true, module: { select: { courseId: true } } },
@@ -133,7 +127,7 @@ export async function getLessonAccess(
     getEnrollment(userId, courseId),
   ]);
   const hasAccess = enrollmentIsActive(enrollment) && Boolean(course?.published);
-  const preview = Boolean(opts.preview) && (!hasAccess || !lesson.published || Boolean(opts.forcePreview));
+  const preview = Boolean(opts.preview);
   if (!lesson.published && !preview) return { ok: false as const, reason: "not_found" as const };
   if (!hasAccess && !preview) return { ok: false as const, reason: "no_access" as const, courseId };
   const state = await getCourseState(userId, courseId);

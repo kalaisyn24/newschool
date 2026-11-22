@@ -15,16 +15,15 @@ import { formatBytes, formatDateTime, formatDuration } from "@/lib/format";
 import { submitAssignment } from "../../actions";
 import { submitTest } from "./actions";
 
-export default async function LessonPage({ params, searchParams }: PageProps<"/learn/lessons/[lessonId]">) {
+export default async function LessonPage({ params }: PageProps<"/learn/lessons/[lessonId]">) {
   const user = await requireLearner();
   const { lessonId } = await params;
-  const forcePreview = (await searchParams).preview === "1";
-  const gate = await getLessonAccess(user.id, lessonId, { preview: user.role === "ADMIN", forcePreview });
+  const gate = await getLessonAccess(user.id, lessonId, { preview: user.role === "ADMIN" });
   if (!gate.ok) {
     if (gate.reason === "not_found") notFound();
     redirect(gate.courseId ? `/learn/courses/${gate.courseId}` : "/learn/courses");
   }
-  // staff preview (not enrolled, unpublished, or ?preview=1): no locks and no progress tracking
+  // admin preview: no locks and no progress tracking
   const isAdmin = gate.preview;
 
   // record the visit; may complete a lesson without conditions
