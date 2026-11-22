@@ -81,6 +81,7 @@ export default async function LessonPage({ params, searchParams }: PageProps<"/l
                 {lesson.module.title} · Урок {access.position} из {state.total}
               </p>
               <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">{lesson.title}</h1>
+              {lesson.summary && <p className="mt-2 max-w-2xl text-slate-600">{lesson.summary}</p>}
             </div>
             {completed ? <Badge tone="green">✓ Урок пройден</Badge> : <Badge tone="brand">Доступен</Badge>}
           </div>

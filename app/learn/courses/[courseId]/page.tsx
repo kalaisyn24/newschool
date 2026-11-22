@@ -127,6 +127,7 @@ export default async function CoursePage({ params }: PageProps<"/learn/courses/[
                         <LessonStatusIcon status={st} index={n} />
                         <div className="min-w-0 flex-1">
                           <p className={`font-medium ${clickable ? "text-slate-900" : "text-slate-400"}`}>{l.title}</p>
+                          {l.summary && <p className="mt-0.5 line-clamp-2 text-sm text-slate-500">{l.summary}</p>}
                           <p className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-slate-500">
                             {l.videoUrl && <span>Видео · {formatDuration(l.durationSec)}</span>}
                             {l.test && l.test._count.questions > 0 && <span>Тест</span>}
