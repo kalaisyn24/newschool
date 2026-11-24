@@ -3,7 +3,8 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { currentSessionId } from "@/lib/session";
 import { PageHeader } from "@/components/ui";
-import { ActionForm, Field, SubmitButton } from "@/components/forms";
+import { ActionForm, Field, NameFields, SubmitButton } from "@/components/forms";
+import { splitName } from "@/lib/validation";
 import { formatDateTime } from "@/lib/format";
 import { logout } from "@/app/(auth)/actions";
 import { changePassword, requestEmailChange, terminateOtherSessions, updateProfile } from "./actions";
@@ -32,9 +33,7 @@ export default async function SettingsPage() {
         <section className="card p-6">
           <h2 className="mb-4 font-semibold text-slate-900">Личные данные</h2>
           <ActionForm action={updateProfile} className="space-y-4">
-            <Field label="Имя и фамилия">
-              <input name="name" defaultValue={user.name} required className="input" />
-            </Field>
+            <NameFields {...splitName(user.name)} lastNameRequired={false} />
             <Field label="Телефон" hint="Необязательно">
               <input name="phone" defaultValue={user.phone ?? ""} className="input" placeholder="+7 ___ ___-__-__" />
             </Field>

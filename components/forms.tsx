@@ -115,6 +115,38 @@ export function ConfirmButton({
   );
 }
 
+/** Two inputs, "firstName" and "lastName" (parsed with firstNameSchema / lastNameSchema). */
+export function NameFields({
+  firstName,
+  lastName,
+  lastNameRequired = true,
+  className = "grid gap-4 sm:grid-cols-2",
+}: {
+  firstName?: string;
+  lastName?: string;
+  lastNameRequired?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <Field label="Имя">
+        <input name="firstName" defaultValue={firstName} autoComplete="given-name" required maxLength={60} className="input" placeholder="Иван" />
+      </Field>
+      <Field label="Фамилия">
+        <input
+          name="lastName"
+          defaultValue={lastName}
+          autoComplete="family-name"
+          required={lastNameRequired}
+          maxLength={60}
+          className="input"
+          placeholder="Петров"
+        />
+      </Field>
+    </div>
+  );
+}
+
 export function Field({
   label,
   hint,

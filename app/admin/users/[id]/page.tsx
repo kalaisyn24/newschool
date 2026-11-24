@@ -4,7 +4,8 @@ import { requireRole } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getCourseState, enrollmentIsActive } from "@/lib/learning";
 import { Avatar, Badge, PageHeader, ProgressBar } from "@/components/ui";
-import { ActionForm, ConfirmButton, Field, SubmitButton } from "@/components/forms";
+import { ActionForm, ConfirmButton, Field, NameFields, SubmitButton } from "@/components/forms";
+import { splitName } from "@/lib/validation";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { activityLabel } from "@/lib/activity-labels";
 import { roleMeta } from "@/lib/roles";
@@ -171,7 +172,7 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
           <section className="card p-6">
             <h2 className="mb-4 font-semibold text-slate-900">Данные</h2>
             <ActionForm action={updateUser.bind(null, user.id)} className="space-y-3">
-              <Field label="Имя"><input name="name" defaultValue={user.name} required className="input" /></Field>
+              <NameFields {...splitName(user.name)} lastNameRequired={false} className="space-y-3" />
               <Field label="E-mail"><input name="email" type="email" defaultValue={user.email} required className="input" /></Field>
               <Field label="Телефон"><input name="phone" defaultValue={user.phone ?? ""} className="input" /></Field>
               <Field label="Роль">

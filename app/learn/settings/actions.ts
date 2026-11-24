@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { currentSessionId } from "@/lib/session";
 import { sendChangeEmail } from "@/lib/tokens";
-import { emailSchema, nameSchema, passwordSchema } from "@/lib/validation";
+import { emailSchema, firstNameSchema, joinName, optionalLastNameSchema, passwordSchema } from "@/lib/validation";
 import { fromZod, str, type ActionState } from "@/lib/action-state";
 import { logActivity } from "@/lib/activity";
 import { rateLimit } from "@/lib/rate-limit";
@@ -15,10 +15,13 @@ import { rateLimit } from "@/lib/rate-limit";
 export async function updateProfile(_: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser();
   const parsed = z
-    .object({ name: nameSchema, phone: z.string().trim().max(40, "Слишком длинный телефон") })
-    .safeParse({ name: str(fd, "name"), phone: str(fd, "phone") });
+    .object({ firstName: firstNameSchema, lastName: optionalLastNameSchema, phone: z.string().trim().max(40, "Слишком длинный телефон") })
+    .safeParse({ firstName: str(fd, "firstName"), lastName: str(fd, "lastName"), phone: str(fd, "phone") });
   if (!parsed.success) return fromZod(parsed.error);
-  await db.user.update({ where: { id: user.id }, data: { name: parsed.data.name, phone: parsed.data.phone || null } });
+  await db.user.update({
+    where: { id: user.id },
+    data: { name: joinName(parsed.data.firstName, parsed.data.lastName), phone: parsed.data.phone || null },
+  });
   refresh();
   return { ok: true, message: "Профиль сохранён" };
 }

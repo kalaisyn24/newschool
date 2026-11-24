@@ -4,7 +4,7 @@ import { requireRole } from "@/lib/auth";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { Avatar, Badge, EmptyState, PageHeader, Table } from "@/components/ui";
-import { ActionForm, Field, SubmitButton } from "@/components/forms";
+import { ActionForm, Field, NameFields, SubmitButton } from "@/components/forms";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { createUser } from "./actions";
 import { roleMeta } from "@/lib/roles";
@@ -61,7 +61,7 @@ export default async function UsersPage({ searchParams }: PageProps<"/admin/user
         <div className="card mb-6 p-6">
           <h2 className="mb-4 font-semibold text-slate-900">Новый пользователь</h2>
           <ActionForm action={createUser} className="grid gap-4 sm:grid-cols-2">
-            <Field label="Имя"><input name="name" required className="input" /></Field>
+            <NameFields className="contents" />
             <Field label="E-mail"><input name="email" type="email" required className="input" /></Field>
             <Field label="Пароль" hint="Не менее 8 символов, буквы и цифры"><input name="password" required className="input" /></Field>
             <Field label="Роль">

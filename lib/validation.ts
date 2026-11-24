@@ -15,4 +15,26 @@ export const passwordSchema = z
   .regex(/[A-Za-zА-Яа-я]/, "Пароль должен содержать буквы")
   .regex(/\d/, "Пароль должен содержать цифры");
 
-export const nameSchema = z.string().trim().min(2, "Укажите имя").max(120, "Имя слишком длинное");
+/* ---------- first / last name (stored together in User.name as "Имя Фамилия") ---------- */
+
+const namePart = (required?: string) =>
+  z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/\s+/g, " "))
+    .pipe(required ? z.string().min(1, required).max(60, "Слишком длинное значение") : z.string().max(60, "Слишком длинное значение"));
+
+export const firstNameSchema = namePart("Укажите имя");
+export const lastNameSchema = namePart("Укажите фамилию");
+/** For editing old accounts that were registered without a last name. */
+export const optionalLastNameSchema = namePart();
+
+export function joinName(firstName: string, lastName: string) {
+  return [firstName, lastName].filter(Boolean).join(" ");
+}
+
+/** "Иван Петров" → { firstName: "Иван", lastName: "Петров" }; the last name may be empty. */
+export function splitName(name: string) {
+  const [firstName = "", ...rest] = name.trim().split(/\s+/);
+  return { firstName, lastName: rest.join(" ") };
+}

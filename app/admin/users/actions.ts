@@ -6,7 +6,14 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
-import { emailSchema, nameSchema, passwordSchema } from "@/lib/validation";
+import {
+  emailSchema,
+  firstNameSchema,
+  joinName,
+  lastNameSchema,
+  optionalLastNameSchema,
+  passwordSchema,
+} from "@/lib/validation";
 import { bool, fromZod, str, type ActionState } from "@/lib/action-state";
 import { sendPasswordResetEmail } from "@/lib/tokens";
 import { logActivity, notify } from "@/lib/activity";
@@ -18,14 +25,20 @@ const roleSchema = z.enum(["STUDENT", "ADMIN", "SUPPORT"]);
 export async function createUser(_: ActionState, fd: FormData): Promise<ActionState> {
   await requireRole("ADMIN");
   const parsed = z
-    .object({ name: nameSchema, email: emailSchema, password: passwordSchema, role: roleSchema })
-    .safeParse({ name: str(fd, "name"), email: str(fd, "email"), password: fd.get("password") ?? "", role: str(fd, "role") });
+    .object({ firstName: firstNameSchema, lastName: lastNameSchema, email: emailSchema, password: passwordSchema, role: roleSchema })
+    .safeParse({
+      firstName: str(fd, "firstName"),
+      lastName: str(fd, "lastName"),
+      email: str(fd, "email"),
+      password: fd.get("password") ?? "",
+      role: str(fd, "role"),
+    });
   if (!parsed.success) return fromZod(parsed.error);
   if (await db.user.findUnique({ where: { email: parsed.data.email }, select: { id: true } }))
     return { fieldErrors: { email: "Пользователь с таким e-mail уже существует" } };
   const user = await db.user.create({
     data: {
-      name: parsed.data.name,
+      name: joinName(parsed.data.firstName, parsed.data.lastName),
       email: parsed.data.email,
       role: parsed.data.role,
       passwordHash: await bcrypt.hash(parsed.data.password, 11),
@@ -38,8 +51,14 @@ export async function createUser(_: ActionState, fd: FormData): Promise<ActionSt
 export async function updateUser(userId: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const admin = await requireRole("ADMIN");
   const parsed = z
-    .object({ name: nameSchema, email: emailSchema, phone: z.string().max(40), role: roleSchema })
-    .safeParse({ name: str(fd, "name"), email: str(fd, "email"), phone: str(fd, "phone"), role: str(fd, "role") });
+    .object({ firstName: firstNameSchema, lastName: optionalLastNameSchema, email: emailSchema, phone: z.string().max(40), role: roleSchema })
+    .safeParse({
+      firstName: str(fd, "firstName"),
+      lastName: str(fd, "lastName"),
+      email: str(fd, "email"),
+      phone: str(fd, "phone"),
+      role: str(fd, "role"),
+    });
   if (!parsed.success) return fromZod(parsed.error);
   const taken = await db.user.findUnique({ where: { email: parsed.data.email }, select: { id: true } });
   if (taken && taken.id !== userId) return { fieldErrors: { email: "Этот e-mail уже используется" } };
@@ -48,7 +67,7 @@ export async function updateUser(userId: string, _: ActionState, fd: FormData): 
   await db.user.update({
     where: { id: userId },
     data: {
-      name: parsed.data.name,
+      name: joinName(parsed.data.firstName, parsed.data.lastName),
       email: parsed.data.email,
       phone: parsed.data.phone || null,
       role: parsed.data.role,

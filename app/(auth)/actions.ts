@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 import { createSession, destroyCurrentSession } from "@/lib/session";
 import { getCurrentUser, homeFor } from "@/lib/auth";
 import { consumeToken, sendPasswordResetEmail, sendVerificationEmail } from "@/lib/tokens";
-import { emailSchema, passwordSchema } from "@/lib/validation";
+import { emailSchema, firstNameSchema, joinName, lastNameSchema, passwordSchema } from "@/lib/validation";
 import { fromZod, str, type ActionState } from "@/lib/action-state";
 import { rateLimit, resetRateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
@@ -22,17 +22,10 @@ function safeNext(next: string) {
   return next.startsWith("/") && !next.startsWith("//") ? next : "";
 }
 
-const personNamePart = (what: string) =>
-  z
-    .string()
-    .trim()
-    .transform((v) => v.replace(/\s+/g, " "))
-    .pipe(z.string().min(1, `Укажите ${what}`).max(60, "Слишком длинное значение"));
-
 const registerSchema = z
   .object({
-    firstName: personNamePart("имя"),
-    lastName: personNamePart("фамилию"),
+    firstName: firstNameSchema,
+    lastName: lastNameSchema,
     email: emailSchema,
     password: passwordSchema,
     password2: z.string(),
@@ -54,7 +47,7 @@ export async function register(_: ActionState, fd: FormData): Promise<ActionStat
   });
   if (!parsed.success) return fromZod(parsed.error);
   const { firstName, lastName, email, password } = parsed.data;
-  const name = `${firstName} ${lastName}`;
+  const name = joinName(firstName, lastName);
 
   const exists = await db.user.findUnique({ where: { email }, select: { id: true } });
   if (exists) return { fieldErrors: { email: "Пользователь с таким e-mail уже зарегистрирован" } };

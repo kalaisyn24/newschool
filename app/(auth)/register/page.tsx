@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ActionForm, Field, SubmitButton } from "@/components/forms";
+import { ActionForm, Field, NameFields, SubmitButton } from "@/components/forms";
 import { register } from "../actions";
 
 export const metadata: Metadata = { title: "Регистрация" };
@@ -16,14 +16,7 @@ export default function RegisterPage() {
         </Link>
       </p>
       <ActionForm action={register} className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Имя">
-            <input name="firstName" autoComplete="given-name" required maxLength={60} className="input" placeholder="Иван" />
-          </Field>
-          <Field label="Фамилия">
-            <input name="lastName" autoComplete="family-name" required maxLength={60} className="input" placeholder="Петров" />
-          </Field>
-        </div>
+        <NameFields />
         <p className="-mt-2 text-xs text-slate-500">Укажите как в документах — так имя будет написано в сертификате.</p>
         <Field label="E-mail">
           <input name="email" type="email" autoComplete="email" required className="input" placeholder="you@example.com" />
