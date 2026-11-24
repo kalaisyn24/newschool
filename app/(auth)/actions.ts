@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 import { createSession, destroyCurrentSession } from "@/lib/session";
 import { getCurrentUser, homeFor } from "@/lib/auth";
 import { consumeToken, sendPasswordResetEmail, sendVerificationEmail } from "@/lib/tokens";
-import { emailSchema, nameSchema, passwordSchema } from "@/lib/validation";
+import { emailSchema, passwordSchema } from "@/lib/validation";
 import { fromZod, str, type ActionState } from "@/lib/action-state";
 import { rateLimit, resetRateLimit } from "@/lib/rate-limit";
 import { logActivity } from "@/lib/activity";
@@ -22,9 +22,17 @@ function safeNext(next: string) {
   return next.startsWith("/") && !next.startsWith("//") ? next : "";
 }
 
+const personNamePart = (what: string) =>
+  z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/\s+/g, " "))
+    .pipe(z.string().min(1, `Укажите ${what}`).max(60, "Слишком длинное значение"));
+
 const registerSchema = z
   .object({
-    name: nameSchema,
+    firstName: personNamePart("имя"),
+    lastName: personNamePart("фамилию"),
     email: emailSchema,
     password: passwordSchema,
     password2: z.string(),
@@ -37,14 +45,16 @@ export async function register(_: ActionState, fd: FormData): Promise<ActionStat
   if (!rl.ok) return { error: "Слишком много попыток регистрации. Попробуйте позже." };
 
   const parsed = registerSchema.safeParse({
-    name: str(fd, "name"),
+    firstName: str(fd, "firstName"),
+    lastName: str(fd, "lastName"),
     email: str(fd, "email"),
     password: fd.get("password") ?? "",
     password2: fd.get("password2") ?? "",
     agree: fd.get("agree") ?? undefined,
   });
   if (!parsed.success) return fromZod(parsed.error);
-  const { name, email, password } = parsed.data;
+  const { firstName, lastName, email, password } = parsed.data;
+  const name = `${firstName} ${lastName}`;
 
   const exists = await db.user.findUnique({ where: { email }, select: { id: true } });
   if (exists) return { fieldErrors: { email: "Пользователь с таким e-mail уже зарегистрирован" } };

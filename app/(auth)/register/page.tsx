@@ -16,9 +16,15 @@ export default function RegisterPage() {
         </Link>
       </p>
       <ActionForm action={register} className="space-y-4">
-        <Field label="Имя и фамилия">
-          <input name="name" autoComplete="name" required className="input" placeholder="Иван Петров" />
-        </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Имя">
+            <input name="firstName" autoComplete="given-name" required maxLength={60} className="input" placeholder="Иван" />
+          </Field>
+          <Field label="Фамилия">
+            <input name="lastName" autoComplete="family-name" required maxLength={60} className="input" placeholder="Петров" />
+          </Field>
+        </div>
+        <p className="-mt-2 text-xs text-slate-500">Укажите как в документах — так имя будет написано в сертификате.</p>
         <Field label="E-mail">
           <input name="email" type="email" autoComplete="email" required className="input" placeholder="you@example.com" />
         </Field>
