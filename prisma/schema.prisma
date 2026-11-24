@@ -270,6 +270,10 @@ model AssignmentSubmission {
   lessonId   String
   lesson     Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   text       String           @db.Text
+  // optional attached file (up to 2 MB)
+  fileKey    String?          @db.VarChar(300)
+  fileName   String?          @db.VarChar(255)
+  fileSize   Int?
   status     SubmissionStatus @default(SUBMITTED)
   feedback   String?          @db.Text
   createdAt  DateTime         @default(now())

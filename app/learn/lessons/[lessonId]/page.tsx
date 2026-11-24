@@ -9,6 +9,7 @@ import { Alert, Badge, ProgressBar } from "@/components/ui";
 import { Markdown } from "@/components/markdown";
 import { VideoPlayer } from "@/components/video-player";
 import { TestRunner } from "@/components/test-runner";
+import { AssignmentFileInput } from "@/components/assignment-file-input";
 import { LessonStatusIcon } from "@/components/lesson-status";
 import { ActionForm, SubmitButton } from "@/components/forms";
 import { Icon } from "@/components/icons";
@@ -164,7 +165,12 @@ export default async function LessonPage({ params }: PageProps<"/learn/lessons/[
                         {s.status === "ACCEPTED" ? "Принято" : s.status === "REJECTED" ? "На доработку" : "На проверке"}
                       </Badge>
                     </div>
-                    <p className="whitespace-pre-line text-slate-700">{s.text}</p>
+                    {s.text && <p className="whitespace-pre-line text-slate-700">{s.text}</p>}
+                    {s.fileKey && (
+                      <a href={`/api/assignments/${s.id}`} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1.5 link">
+                        <Icon name="file" className="size-4" /> {s.fileName ?? "Файл"} {s.fileSize ? `(${formatBytes(s.fileSize)})` : ""}
+                      </a>
+                    )}
                     {s.feedback && <p className="mt-2 rounded-lg bg-slate-50 p-2 text-slate-600"><b>Комментарий:</b> {s.feedback}</p>}
                   </div>
                 ))}
@@ -173,7 +179,8 @@ export default async function LessonPage({ params }: PageProps<"/learn/lessons/[
             {!submissions.some((s) => s.status === "ACCEPTED") && (
               <ActionForm action={submitAssignment} resetOnSuccess className="mt-4 space-y-3">
                 <input type="hidden" name="lessonId" value={lesson.id} />
-                <textarea name="text" rows={5} required className="input" placeholder="Опишите решение или вставьте ссылку на работу" />
+                <textarea name="text" rows={5} className="input" placeholder="Опишите решение или вставьте ссылку на работу (например, на Google Диск)" />
+                <AssignmentFileInput />
                 <SubmitButton pendingText="Отправляем…">Отправить решение</SubmitButton>
               </ActionForm>
             )}

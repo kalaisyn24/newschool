@@ -2,7 +2,8 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { Badge, EmptyState, PageHeader } from "@/components/ui";
 import { ActionForm, SubmitButton } from "@/components/forms";
-import { formatDateTime } from "@/lib/format";
+import { formatBytes, formatDateTime } from "@/lib/format";
+import { Icon } from "@/components/icons";
 import { reviewSubmission } from "@/lib/assignment-actions";
 
 const tabs = [
@@ -78,7 +79,12 @@ export async function AssignmentReview({
                 <summary className="cursor-pointer text-slate-500">Текст задания</summary>
                 <p className="mt-1 whitespace-pre-line text-slate-600">{s.lesson.assignment}</p>
               </details>
-              <div className="mt-3 rounded-xl bg-slate-50 p-4 text-sm whitespace-pre-line text-slate-800">{s.text}</div>
+              {s.text && <div className="mt-3 rounded-xl bg-slate-50 p-4 text-sm whitespace-pre-line text-slate-800">{s.text}</div>}
+              {s.fileKey && (
+                <a href={`/api/assignments/${s.id}`} target="_blank" rel="noreferrer" className="btn-secondary btn-sm mt-3">
+                  <Icon name="file" className="size-4" /> {s.fileName ?? "Файл"} {s.fileSize ? `(${formatBytes(s.fileSize)})` : ""}
+                </a>
+              )}
               {s.feedback && <p className="mt-2 text-sm text-slate-600"><b>Комментарий:</b> {s.feedback}</p>}
               {s.status === "SUBMITTED" && (
                 <ActionForm action={reviewSubmission.bind(null, s.id)} className="mt-4 space-y-2">

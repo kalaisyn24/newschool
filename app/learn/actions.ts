@@ -7,6 +7,8 @@ import { requireLearner } from "@/lib/auth";
 import { logActivity } from "@/lib/activity";
 import { getLessonAccess, recomputeLesson } from "@/lib/learning";
 import { str, type ActionState } from "@/lib/action-state";
+import { saveUpload } from "@/lib/storage";
+import { ASSIGNMENT_FILE_EXT, ASSIGNMENT_FILE_MAX, ASSIGNMENT_FILE_TOO_BIG } from "@/lib/assignment-file";
 
 /** Self-enrollment for courses with open access. */
 export async function enroll(courseId: string) {
@@ -53,13 +55,34 @@ export async function submitAssignment(_: ActionState, fd: FormData): Promise<Ac
   const user = await requireLearner();
   const lessonId = str(fd, "lessonId");
   const text = str(fd, "text");
-  if (text.length < 5) return { error: "Опишите решение подробнее (минимум 5 символов)" };
+  const raw = fd.get("file");
+  const file = raw instanceof File && raw.size > 0 ? raw : null;
+  if (file && file.size > ASSIGNMENT_FILE_MAX) return { error: ASSIGNMENT_FILE_TOO_BIG };
+  if (!file && text.length < 5) return { error: "Опишите решение подробнее (минимум 5 символов) или прикрепите файл" };
   if (text.length > 20000) return { error: "Слишком длинный ответ" };
   const access = await getLessonAccess(user.id, lessonId);
   if (!access.ok) return { error: "Урок недоступен" };
   const lesson = await db.lesson.findUnique({ where: { id: lessonId }, select: { assignment: true, title: true } });
   if (!lesson?.assignment) return { error: "В этом уроке нет практического задания" };
-  await db.assignmentSubmission.create({ data: { userId: user.id, lessonId, text } });
+
+  let saved: { key: string; size: number } | null = null;
+  if (file) {
+    try {
+      saved = await saveUpload(file, "assignments", ASSIGNMENT_FILE_EXT);
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Не удалось сохранить файл" };
+    }
+  }
+  await db.assignmentSubmission.create({
+    data: {
+      userId: user.id,
+      lessonId,
+      text,
+      fileKey: saved?.key ?? null,
+      fileName: file ? file.name.slice(0, 255) : null,
+      fileSize: saved?.size ?? null,
+    },
+  });
   await logActivity(user.id, "assignment_submitted", lesson.title, `/learn/lessons/${lessonId}`);
   await recomputeLesson(user.id, lessonId);
   refresh();
