@@ -9,7 +9,9 @@ const nextConfig: NextConfig = {
   },
   cacheComponents: true,
   partialPrefetching: true,
-  serverExternalPackages: ["@prisma/adapter-mariadb", "mariadb"],
+  // user uploads (certificates, materials) are runtime data — never scan or trace them at build time
+  outputFileTracingExcludes: { "/*": ["storage/**"] },
+  serverExternalPackages:["@prisma/adapter-mariadb", "mariadb"],
   turbopack: {
     rules: {
       "*.css": {

@@ -28,7 +28,7 @@ function button(href: string, label: string) {
 
 export async function sendMail(to: string, subject: string, html: string) {
   if (!process.env.SMTP_HOST) {
-    const dir = path.join(process.cwd(), "storage", "mail-outbox");
+    const dir = path.join(/* turbopackIgnore: true */ process.cwd(), "storage", "mail-outbox");
     await mkdir(dir, { recursive: true });
     const file = path.join(dir, `${Date.now()}-${to.replace(/[^a-z0-9@.]/gi, "_")}.html`);
     await writeFile(file, `<!-- To: ${to} | Subject: ${subject} -->\n${html}`);

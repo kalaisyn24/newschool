@@ -3,7 +3,7 @@ import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomToken } from "@/lib/crypto";
 
-const ROOT = path.join(process.cwd(), "storage", "uploads");
+const ROOT = path.join(/* turbopackIgnore: true */ process.cwd(), "storage", "uploads");
 
 export const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 export const MATERIAL_EXT = [
