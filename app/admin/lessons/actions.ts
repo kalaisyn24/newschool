@@ -107,9 +107,8 @@ export async function deleteMaterial(materialId: string) {
 export async function saveTestSettings(lessonId: string, _: ActionState, fd: FormData): Promise<ActionState> {
   await requireRole("ADMIN");
   const passingScore = Math.min(100, Math.max(1, int(fd, "passingScore", 70)));
-  const maxRaw = str(fd, "maxAttempts");
-  const maxAttempts = maxRaw ? Math.max(1, int(fd, "maxAttempts", 1)) : null;
-  const data = { passingScore, maxAttempts, required: bool(fd, "required"), showAnswers: bool(fd, "showAnswers") };
+  // Attempts are limited by the common retake rule (lib/test-attempts.ts), not per test.
+  const data = { passingScore, required: bool(fd, "required"), showAnswers: bool(fd, "showAnswers") };
   await db.test.upsert({ where: { lessonId }, create: { lessonId, ...data }, update: data });
   refresh();
   return { ok: true, message: "Настройки теста сохранены" };

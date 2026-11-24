@@ -4,6 +4,7 @@ import { requireLearner } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getLessonAccess, lessonRequirements, touchLesson } from "@/lib/learning";
 import { parseVideoUrl } from "@/lib/video";
+import { testAttemptState } from "@/lib/test-attempts";
 import { Alert, Badge, ProgressBar } from "@/components/ui";
 import { Markdown } from "@/components/markdown";
 import { VideoPlayer } from "@/components/video-player";
@@ -62,7 +63,7 @@ export default async function LessonPage({ params }: PageProps<"/learn/lessons/[
   const completed = Boolean(progress?.completedAt);
   const testAvailable = !req.video || Boolean(progress?.videoCompleted) || isAdmin;
   const test = lesson.test && lesson.test.questions.length > 0 ? lesson.test : null;
-  const attemptsLeft = test?.maxAttempts ? Math.max(0, test.maxAttempts - attempts.length) : null;
+  const attemptState = testAttemptState(attempts);
   const bestScore = attempts.reduce((m, a) => Math.max(m, a.score), 0);
   const nextOpen = next && (next.status !== "locked" || isAdmin);
   let n = 0;
@@ -190,12 +191,13 @@ export default async function LessonPage({ params }: PageProps<"/learn/lessons/[
             </div>
             {testAvailable ? (
               <TestRunner
-                key={attempts.length}
                 lessonId={lesson.id}
                 questions={test.questions.map((q) => ({ id: q.id, text: q.text, multiple: q.multiple, options: q.options }))}
                 passingScore={test.passingScore}
-                attemptsLeft={attemptsLeft}
-                alreadyPassed={Boolean(progress?.testPassed)}
+                attemptsLeft={isAdmin ? null : attemptState.attemptsLeft}
+                lockedUntil={isAdmin ? null : attemptState.lockedUntil}
+                alreadyPassed={Boolean(progress?.testPassed) || attemptState.passed}
+                retakeAllowed={isAdmin}
                 submit={submitTest}
               />
             ) : (

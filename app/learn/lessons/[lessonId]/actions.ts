@@ -3,7 +3,8 @@
 import { db } from "@/lib/db";
 import { requireLearner } from "@/lib/auth";
 import { getLessonAccess, recomputeLesson } from "@/lib/learning";
-import { logActivity } from "@/lib/activity";
+import { logActivity, notify } from "@/lib/activity";
+import { ATTEMPTS_PER_CYCLE, RETAKE_PAUSE_DAYS, testAttemptState } from "@/lib/test-attempts";
 
 export type TestResult = {
   error?: string;
@@ -13,6 +14,8 @@ export type TestResult = {
   passed?: boolean;
   passingScore?: number;
   attemptsLeft?: number | null;
+  /** ISO date when a retake becomes available (after a failed cycle). */
+  lockedUntil?: string | null;
   /** questionId → { correct ids, was the answer right } (only when showAnswers is on) */
   review?: Record<string, { correctIds: string[]; right: boolean }>;
   lessonCompleted?: boolean;
@@ -40,8 +43,15 @@ export async function submitTest(lessonId: string, answers: Record<string, strin
     return { error: "Сначала посмотрите видео урока — тест станет доступен после просмотра." };
   }
 
-  const used = await db.testAttempt.count({ where: { userId: user.id, testId: test.id } });
-  if (test.maxAttempts && used >= test.maxAttempts) return { error: "Попытки закончились. Обратитесь к администратору." };
+  const isAdmin = user.role === "ADMIN";
+  const history = await db.testAttempt.findMany({ where: { userId: user.id, testId: test.id }, select: { passed: true, createdAt: true } });
+  const before = testAttemptState(history);
+  if (!isAdmin) {
+    if (before.passed) return { error: "Тест уже сдан." };
+    if (before.lockedUntil) {
+      return { error: "Попытки закончились. Повторите урок — пересдать тест можно будет после паузы.", lockedUntil: before.lockedUntil };
+    }
+  }
 
   let correct = 0;
   const review: NonNullable<TestResult["review"]> = {};
@@ -60,9 +70,18 @@ export async function submitTest(lessonId: string, answers: Record<string, strin
   const score = Math.round((correct / total) * 100);
   const passed = score >= test.passingScore;
 
-  await db.testAttempt.create({
+  const attempt = await db.testAttempt.create({
     data: { userId: user.id, testId: test.id, score, correct, total, passed, answers: clean },
   });
+  const after = testAttemptState([...history, attempt]);
+  if (!passed && after.lockedUntil && !isAdmin) {
+    await notify(
+      user.id,
+      `Тест не сдан: «${lesson.title}»`,
+      `Обе попытки использованы. Повторите материал урока — пересдать тест можно через ${RETAKE_PAUSE_DAYS} дня, у вас снова будет ${ATTEMPTS_PER_CYCLE} попытки.`,
+      `/learn/lessons/${lessonId}`,
+    );
+  }
   await logActivity(user.id, passed ? "test_passed" : "test_failed", `${lesson.title}: ${score}%`, `/learn/lessons/${lessonId}`);
 
   let lessonCompleted = Boolean(progress?.completedAt);
@@ -83,7 +102,8 @@ export async function submitTest(lessonId: string, answers: Record<string, strin
     total,
     passed,
     passingScore: test.passingScore,
-    attemptsLeft: test.maxAttempts ? test.maxAttempts - used - 1 : null,
+    attemptsLeft: isAdmin ? null : after.attemptsLeft,
+    lockedUntil: isAdmin ? null : after.lockedUntil,
     review: test.showAnswers ? review : undefined,
     lessonCompleted,
   };

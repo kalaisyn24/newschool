@@ -7,6 +7,7 @@ import { ActionForm, ConfirmButton, Field, SubmitButton, Toggle } from "@/compon
 import { EditableQuestion, QuestionEditor } from "@/components/admin/question-editor";
 import { formatBytes } from "@/lib/format";
 import { parseVideoUrl } from "@/lib/video";
+import { ATTEMPTS_PER_CYCLE, RETAKE_PAUSE_DAYS } from "@/lib/test-attempts";
 import { deleteLesson } from "../../courses/actions";
 import {
   addMaterial,
@@ -157,9 +158,10 @@ export default async function LessonEditorPage({ params }: PageProps<"/admin/les
             <Field label="Проходной балл, %">
               <input name="passingScore" type="number" min={1} max={100} defaultValue={lesson.test?.passingScore ?? 70} className="input" />
             </Field>
-            <Field label="Лимит попыток" hint="Пусто — без ограничений">
-              <input name="maxAttempts" type="number" min={1} defaultValue={lesson.test?.maxAttempts ?? ""} className="input" />
-            </Field>
+            <div className="text-sm text-slate-600">
+              <span className="label">Попытки</span>
+              {ATTEMPTS_PER_CYCLE} попытки; после неудачных — пауза {RETAKE_PAUSE_DAYS} дня, затем снова {ATTEMPTS_PER_CYCLE}
+            </div>
             <Toggle name="required" defaultChecked={lesson.test?.required ?? true} label="Обязательный" hint="Нужно сдать для завершения урока" />
             <Toggle name="showAnswers" defaultChecked={lesson.test?.showAnswers ?? true} label="Показывать ответы" hint="После завершения попытки" />
             <div className="flex gap-2 sm:col-span-2 lg:col-span-4">

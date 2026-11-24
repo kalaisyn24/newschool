@@ -6,6 +6,7 @@ import { Badge, PageHeader, ProgressBar, Table } from "@/components/ui";
 import { ConfirmButton, SubmitButton } from "@/components/forms";
 import { LessonStatusBadge } from "@/components/lesson-status";
 import { formatDateTime } from "@/lib/format";
+import { testAttemptState } from "@/lib/test-attempts";
 import { markLessonComplete, resetLessonProgress, resetTestAttempts } from "../../../actions";
 
 export default async function UserCourseProgressPage({ params }: PageProps<"/admin/users/[id]/courses/[courseId]">) {
@@ -20,7 +21,7 @@ export default async function UserCourseProgressPage({ params }: PageProps<"/adm
   const attempts = await db.testAttempt.findMany({
     where: { userId: id, test: { lessonId: { in: lessonIds } } },
     orderBy: { createdAt: "desc" },
-    include: { test: { select: { lessonId: true, maxAttempts: true } } },
+    include: { test: { select: { lessonId: true } } },
   });
   const byLesson = new Map<string, typeof attempts>();
   for (const a of attempts) byLesson.set(a.test.lessonId, [...(byLesson.get(a.test.lessonId) ?? []), a]);
@@ -64,9 +65,15 @@ export default async function UserCourseProgressPage({ params }: PageProps<"/adm
                       {l.test && l.test._count.questions > 0 ? (
                         at.length ? (
                           <span>
-                            {best}% · {at.length}
-                            {at[0].test.maxAttempts ? `/${at[0].test.maxAttempts}` : ""} поп.{" "}
-                            {p?.testPassed && <Badge tone="green">сдан</Badge>}
+                            {best}% · {at.length} поп.{" "}
+                            {p?.testPassed ? (
+                              <Badge tone="green">сдан</Badge>
+                            ) : (
+                              (() => {
+                                const st = testAttemptState(at);
+                                return st.lockedUntil ? <Badge tone="amber">пауза до {formatDateTime(st.lockedUntil)}</Badge> : null;
+                              })()
+                            )}
                           </span>
                         ) : (
                           "не начат"
@@ -85,7 +92,7 @@ export default async function UserCourseProgressPage({ params }: PageProps<"/adm
                         )}
                         {at.length > 0 && (
                           <form action={resetTestAttempts.bind(null, id, l.id)}>
-                            <ConfirmButton className="btn-ghost btn-sm" message="Сбросить попытки теста? Студент сможет пройти тест заново.">Сбросить попытки</ConfirmButton>
+                            <ConfirmButton className="btn-ghost btn-sm" message="Сбросить попытки теста? Пауза снимется, у студента снова будет 2 попытки.">Сбросить попытки</ConfirmButton>
                           </form>
                         )}
                         {p && (

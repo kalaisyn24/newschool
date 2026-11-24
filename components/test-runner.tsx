@@ -5,6 +5,28 @@ import { useRouter } from "next/navigation";
 import type { TestResult } from "@/app/learn/lessons/[lessonId]/actions";
 import { Spinner } from "@/components/forms";
 import { cx } from "@/components/ui";
+import { ATTEMPTS_PER_CYCLE, RETAKE_PAUSE_DAYS } from "@/lib/test-attempts";
+
+/** Retake date in the student's own time zone. */
+function RetakeDate({ iso }: { iso: string }) {
+  return (
+    <b suppressHydrationWarning>
+      {new Date(iso).toLocaleString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
+    </b>
+  );
+}
+
+function LockedNotice({ until }: { until: string }) {
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      <p className="font-medium">Обе попытки использованы — тест временно недоступен.</p>
+      <p className="mt-1">
+        Повторите материал урока: пересмотрите видео и конспект. Пересдать тест можно будет <RetakeDate iso={until} />, у вас снова
+        будет {ATTEMPTS_PER_CYCLE} попытки.
+      </p>
+    </div>
+  );
+}
 
 type Q = { id: string; text: string; multiple: boolean; options: { id: string; text: string }[] };
 
@@ -13,14 +35,20 @@ export function TestRunner({
   questions,
   passingScore,
   attemptsLeft,
+  lockedUntil,
   alreadyPassed,
+  retakeAllowed,
   submit,
 }: {
   lessonId: string;
   questions: Q[];
   passingScore: number;
+  /** null — no limit (admin preview). */
   attemptsLeft: number | null;
+  lockedUntil: string | null;
   alreadyPassed: boolean;
+  /** Admins may take a passed test again. */
+  retakeAllowed?: boolean;
   submit: (lessonId: string, answers: Record<string, string[]>) => Promise<TestResult>;
 }) {
   const router = useRouter();
@@ -29,9 +57,9 @@ export function TestRunner({
   const [result, setResult] = useState<TestResult | null>(null);
   const [pending, start] = useTransition();
   const [left, setLeft] = useState(attemptsLeft);
+  const [locked, setLocked] = useState(lockedUntil);
 
   const answered = questions.filter((q) => (answers[q.id]?.length ?? 0) > 0).length;
-  const noAttempts = left !== null && left <= 0;
 
   function toggle(q: Q, optionId: string) {
     if (result) return;
@@ -47,6 +75,7 @@ export function TestRunner({
       const r = await submit(lessonId, answers);
       setResult(r);
       if (r.attemptsLeft !== undefined) setLeft(r.attemptsLeft);
+      if (r.lockedUntil !== undefined) setLocked(r.lockedUntil);
       if (!r.error) {
         window.scrollTo({ top: (document.getElementById("lesson-test")?.offsetTop ?? 0) - 20, behavior: "smooth" });
         router.refresh();
@@ -61,18 +90,30 @@ export function TestRunner({
   }
 
   if (!started && !result) {
+    if (alreadyPassed && !retakeAllowed) {
+      return <p className="text-sm text-slate-600">Тест сдан — можно переходить к следующему уроку.</p>;
+    }
+    if (locked) return <LockedNotice until={locked} />;
     return (
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="text-sm text-slate-600">
-          <p>
-            {questions.length} {questions.length === 1 ? "вопрос" : "вопросов"} · проходной балл {passingScore}%
-          </p>
-          <p className="text-slate-500">
-            {left === null ? "Количество попыток не ограничено" : `Осталось попыток: ${Math.max(0, left)}`}
-          </p>
-        </div>
-        <button className="btn-primary" disabled={noAttempts} onClick={() => setStarted(true)}>
-          {alreadyPassed ? "Пройти ещё раз" : "Начать тест"}
+      <div className="space-y-4">
+        <p className="text-sm text-slate-600">
+          {questions.length} {questions.length === 1 ? "вопрос" : "вопросов"} · проходной балл {passingScore}%
+        </p>
+        {left !== null && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <p className="font-medium">
+              {left < ATTEMPTS_PER_CYCLE
+                ? "Внимание: это последняя попытка."
+                : `Внимание: у вас ${ATTEMPTS_PER_CYCLE} попытки — право на одну ошибку.`}
+            </p>
+            <p className="mt-1">
+              Если тест не будет сдан, он станет недоступен на {RETAKE_PAUSE_DAYS} дня. За это время повторите урок, после паузы у вас
+              снова будет {ATTEMPTS_PER_CYCLE} попытки. Начинайте, когда будете готовы.
+            </p>
+          </div>
+        )}
+        <button className="btn-primary" onClick={() => setStarted(true)}>
+          {alreadyPassed ? "Пройти ещё раз" : left !== null && left < ATTEMPTS_PER_CYCLE ? "Начать последнюю попытку" : "Начать тест"}
         </button>
       </div>
     );
@@ -80,7 +121,12 @@ export function TestRunner({
 
   return (
     <div className="space-y-5">
-      {result?.error && <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{result.error}</div>}
+      {result?.error &&
+        (locked ? (
+          <LockedNotice until={locked} />
+        ) : (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{result.error}</div>
+        ))}
       {result && !result.error && (
         <div
           className={cx(
@@ -95,16 +141,23 @@ export function TestRunner({
             Результат: <b>{result.score}%</b> ({result.correct} из {result.total}). Проходной балл — {result.passingScore}%.
           </p>
           {result.passed && result.lessonCompleted && <p className="mt-1 text-sm text-emerald-700">Урок завершён — следующий урок открыт.</p>}
-          {!result.passed && (
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              {left === null || left > 0 ? (
-                <button className="btn-primary btn-sm" onClick={retry}>Пройти заново</button>
-              ) : (
-                <span className="text-sm text-slate-600">Попытки закончились. Обратитесь в поддержку.</span>
-              )}
-              {left !== null && left > 0 && <span className="text-xs text-slate-500">Осталось попыток: {left}</span>}
-            </div>
-          )}
+          {!result.passed &&
+            (locked ? (
+              <div className="mt-3">
+                <LockedNotice until={locked} />
+              </div>
+            ) : left === null || left > 0 ? (
+              <div className="mt-3 space-y-2">
+                {left !== null && (
+                  <p className="text-sm text-slate-700">
+                    Осталась последняя попытка. Перед ней рекомендуем ещё раз просмотреть материал урока.
+                  </p>
+                )}
+                <button className="btn-primary btn-sm" onClick={retry}>
+                  {left === null ? "Пройти заново" : "Использовать последнюю попытку"}
+                </button>
+              </div>
+            ) : null)}
         </div>
       )}
 
