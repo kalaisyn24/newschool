@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/auth";
 import type { ActionState } from "@/lib/action-state";
 import { logActivity, notify } from "@/lib/activity";
 import { deleteUpload, saveUpload } from "@/lib/storage";
+import { issueGeneratedCertificate } from "@/lib/certificates";
 
 const MAX_SIZE = 20 * 1024 * 1024;
 
@@ -48,4 +49,20 @@ export async function uploadCertificate(certId: string, _: ActionState, fd: Form
   if (firstIssue) await logActivity(cert.userId, "certificate_issued", cert.course.title, `/learn/certificates/${cert.id}`);
   refresh();
   return { ok: true, message: firstIssue ? "Сертификат загружен, студент уведомлён" : "Файл сертификата заменён" };
+}
+
+/** Generates the PDF from the template (or re-generates it with corrected names) and issues it. */
+export async function generateCertificate(certId: string, _: ActionState, fd: FormData): Promise<ActionState> {
+  await requireRole("ADMIN");
+  const ru = String(fd.get("nameRu") ?? "").trim();
+  const lat = String(fd.get("nameLat") ?? "").trim();
+  if (ru.length > 160 || lat.length > 160) return { error: "Имя слишком длинное" };
+  try {
+    const { firstIssue } = await issueGeneratedCertificate(certId, { ru, lat });
+    refresh();
+    return { ok: true, message: firstIssue ? "Сертификат сгенерирован и выдан, студент уведомлён" : "Сертификат перевыпущен" };
+  } catch (e) {
+    console.error("Certificate generation failed", e);
+    return { error: e instanceof Error ? `Не удалось сгенерировать: ${e.message}` : "Не удалось сгенерировать сертификат" };
+  }
 }

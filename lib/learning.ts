@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { notify, notifyAdmins, logActivity } from "@/lib/activity";
 import { randomToken } from "@/lib/crypto";
+import { issueGeneratedCertificate } from "@/lib/certificates";
 
 export type LessonStatus = "completed" | "available" | "locked";
 export type CourseStatus = "available" | "in_progress" | "completed" | "blocked";
@@ -219,6 +220,14 @@ export async function recomputeCourse(userId: string, courseId: string) {
       `/learn/certificates/${certificate.id}`,
     );
     return;
+  }
+  // Generate the PDF from the template right away (the student gets a "certificate issued"
+  // notification); if that fails, fall back to a manual upload by an admin.
+  try {
+    await issueGeneratedCertificate(certificate.id);
+    return;
+  } catch (e) {
+    console.error("Certificate generation failed", e);
   }
   await notify(
     userId,

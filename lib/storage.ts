@@ -51,6 +51,15 @@ export async function saveUpload(file: File, folder: "covers" | "materials" | "c
   return { key, size: file.size, mimeType: mimeFor(key) };
 }
 
+/** Saves generated content (e.g. a certificate PDF) under a new random key. */
+export async function saveBuffer(data: Uint8Array, folder: "certificates", ext: string) {
+  const key = `${folder}/${new Date().toISOString().slice(0, 7)}/${randomToken(12)}.${ext}`;
+  const full = resolveKey(key);
+  await mkdir(path.dirname(full), { recursive: true });
+  await writeFile(full, data);
+  return { key, size: data.byteLength };
+}
+
 export async function readUpload(key: string) {
   const full = resolveKey(key);
   const [data, info] = await Promise.all([readFile(full), stat(full)]);

@@ -6,7 +6,7 @@ import { getCourseState, enrollmentIsActive } from "@/lib/learning";
 import { Avatar, Badge, EmptyState, PageHeader, ProgressBar, Table } from "@/components/ui";
 import { ActionForm, ConfirmButton, Field, SubmitButton } from "@/components/forms";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { revokeAccess, restoreAccess } from "../../../users/actions";
+import { completeCourseAndIssueCertificate, revokeAccess, restoreAccess } from "../../../users/actions";
 import { grantByEmail } from "../../actions";
 
 export default async function CourseStudentsPage({ params }: PageProps<"/admin/courses/[id]/students">) {
@@ -14,7 +14,10 @@ export default async function CourseStudentsPage({ params }: PageProps<"/admin/c
   const { id } = await params;
   const course = await db.course.findUnique({
     where: { id },
-    include: { enrollments: { include: { user: { select: { id: true, name: true, email: true } } }, orderBy: { createdAt: "desc" } } },
+    include: {
+      enrollments: { include: { user: { select: { id: true, name: true, email: true } } }, orderBy: { createdAt: "desc" } },
+      certificates: { select: { id: true, userId: true, fileKey: true } },
+    },
   });
   if (!course) notFound();
   const states = await Promise.all(course.enrollments.map((e) => getCourseState(e.userId, id)));
@@ -55,6 +58,7 @@ export default async function CourseStudentsPage({ params }: PageProps<"/admin/c
             {course.enrollments.map((e, i) => {
               const st = states[i];
               const isActive = enrollmentIsActive(e);
+              const cert = course.certificates.find((c) => c.userId === e.userId);
               return (
                 <tr key={e.id}>
                   <td>
@@ -78,15 +82,31 @@ export default async function CourseStudentsPage({ params }: PageProps<"/admin/c
                   <td className="text-slate-500">{formatDateTime(e.lastAccessAt)}</td>
                   <td className="text-slate-500">{e.completedAt ? formatDate(e.completedAt) : "—"}</td>
                   <td className="text-right">
-                    {isActive ? (
-                      <form action={revokeAccess.bind(null, e.user.id, id)}>
-                        <ConfirmButton className="btn-ghost btn-sm text-rose-600" message="Закрыть доступ к курсу?">Закрыть</ConfirmButton>
-                      </form>
-                    ) : (
-                      <form action={restoreAccess.bind(null, e.user.id, id)}>
-                        <SubmitButton className="btn-ghost btn-sm text-emerald-700">Открыть</SubmitButton>
-                      </form>
-                    )}
+                    <div className="flex items-center justify-end gap-1">
+                      {cert?.fileKey ? (
+                        <a href={`/api/certificates/${cert.id}`} target="_blank" rel="noreferrer" className="btn-ghost btn-sm whitespace-nowrap">
+                          Сертификат
+                        </a>
+                      ) : (
+                        <ActionForm action={completeCourseAndIssueCertificate.bind(null, e.user.id, id)}>
+                          <ConfirmButton
+                            className="btn-secondary btn-sm whitespace-nowrap"
+                            message={`Отметить курс пройденным и выдать сертификат на имя «${e.user.name}»?`}
+                          >
+                            Пройден + сертификат
+                          </ConfirmButton>
+                        </ActionForm>
+                      )}
+                      {isActive ? (
+                        <form action={revokeAccess.bind(null, e.user.id, id)}>
+                          <ConfirmButton className="btn-ghost btn-sm text-rose-600" message="Закрыть доступ к курсу?">Закрыть</ConfirmButton>
+                        </form>
+                      ) : (
+                        <form action={restoreAccess.bind(null, e.user.id, id)}>
+                          <SubmitButton className="btn-ghost btn-sm text-emerald-700">Открыть</SubmitButton>
+                        </form>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

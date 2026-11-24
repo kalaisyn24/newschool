@@ -10,7 +10,8 @@ import { emailSchema, nameSchema, passwordSchema } from "@/lib/validation";
 import { bool, fromZod, str, type ActionState } from "@/lib/action-state";
 import { sendPasswordResetEmail } from "@/lib/tokens";
 import { logActivity, notify } from "@/lib/activity";
-import { recomputeCourse } from "@/lib/learning";
+import { recomputeCourse, requestCertificate } from "@/lib/learning";
+import { issueGeneratedCertificate } from "@/lib/certificates";
 
 const roleSchema = z.enum(["STUDENT", "ADMIN", "SUPPORT"]);
 
@@ -161,4 +162,50 @@ export async function resetLessonProgress(userId: string, lessonId: string) {
   await db.testAttempt.deleteMany({ where: { userId, test: { lessonId } } });
   await db.enrollment.updateMany({ where: { userId, courseId: lesson.module.courseId }, data: { completedAt: null } });
   refresh();
+}
+
+/**
+ * One click: marks the whole course as passed for the student (all lessons completed)
+ * and issues a PDF certificate generated from the template.
+ */
+export async function completeCourseAndIssueCertificate(userId: string, courseId: string, _: ActionState, _fd: FormData): Promise<ActionState> {
+  const admin = await requireRole("ADMIN");
+  const course = await db.course.findUnique({
+    where: { id: courseId },
+    select: { title: true, modules: { select: { lessons: { select: { id: true } } } } },
+  });
+  if (!course) return { error: "Курс не найден" };
+  const now = new Date();
+
+  const lessonIds = course.modules.flatMap((m) => m.lessons.map((l) => l.id));
+  if (lessonIds.length) {
+    await db.lessonProgress.createMany({ data: lessonIds.map((lessonId) => ({ userId, lessonId })), skipDuplicates: true });
+    await db.lessonProgress.updateMany({
+      where: { userId, lessonId: { in: lessonIds }, completedAt: null },
+      data: { completedAt: now, videoCompleted: true, testPassed: true },
+    });
+  }
+
+  const enrollment = await db.enrollment.findUnique({ where: { userId_courseId: { userId, courseId } } });
+  if (!enrollment) {
+    await db.enrollment.create({ data: { userId, courseId, grantedById: admin.id, completedAt: now } });
+  } else if (!enrollment.completedAt) {
+    await db.enrollment.update({ where: { id: enrollment.id }, data: { completedAt: now } });
+  }
+  if (!enrollment?.completedAt) await logActivity(userId, "course_completed", course.title, `/learn/courses/${courseId}`);
+
+  const { certificate } = await requestCertificate(userId, courseId);
+  if (certificate.issuedAt && certificate.fileKey) {
+    refresh();
+    return { ok: true, message: "Курс отмечен пройденным. Сертификат уже был выдан раньше" };
+  }
+  try {
+    await issueGeneratedCertificate(certificate.id);
+  } catch (e) {
+    console.error("Certificate generation failed", e);
+    refresh();
+    return { error: "Курс отмечен пройденным, но сертификат не удалось сгенерировать. Загрузите PDF вручную в разделе «Сертификаты»." };
+  }
+  refresh();
+  return { ok: true, message: "Курс пройден, сертификат выдан и отправлен студенту" };
 }

@@ -11,6 +11,7 @@ import { roleMeta } from "@/lib/roles";
 import {
   deleteUser,
   grantAccess,
+  completeCourseAndIssueCertificate,
   restoreAccess,
   revokeAccess,
   sendResetLink,
@@ -27,6 +28,7 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
     include: {
       enrollments: { include: { course: { select: { id: true, title: true, published: true } }, grantedBy: { select: { name: true } } }, orderBy: { createdAt: "desc" } },
       activities: { orderBy: { createdAt: "desc" }, take: 40 },
+      certificates: { select: { id: true, courseId: true, issuedAt: true, fileKey: true } },
       _count: { select: { sessions: true, testAttempts: true, conversations: true } },
     },
   });
@@ -68,6 +70,7 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
               {user.enrollments.map((e, i) => {
                 const st = states[i];
                 const active = enrollmentIsActive(e);
+                const cert = user.certificates.find((c) => c.courseId === e.courseId);
                 return (
                   <div key={e.id} className="rounded-xl border border-slate-200 p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -95,6 +98,20 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
                     )}
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Link href={`/admin/users/${user.id}/courses/${e.courseId}`} className="btn-secondary btn-sm">Подробный прогресс</Link>
+                      {cert?.fileKey ? (
+                        <a href={`/api/certificates/${cert.id}`} target="_blank" rel="noreferrer" className="btn-secondary btn-sm">
+                          Сертификат (PDF)
+                        </a>
+                      ) : (
+                        <ActionForm action={completeCourseAndIssueCertificate.bind(null, user.id, e.courseId)}>
+                          <ConfirmButton
+                            className="btn-primary btn-sm"
+                            message={`Отметить курс «${e.course.title}» пройденным и выдать сертификат на имя «${user.name}»?`}
+                          >
+                            Курс пройден + сертификат
+                          </ConfirmButton>
+                        </ActionForm>
+                      )}
                       {active ? (
                         <form action={revokeAccess.bind(null, user.id, e.courseId)}>
                           <ConfirmButton className="btn-ghost btn-sm text-rose-600" message="Закрыть доступ к курсу? Прогресс сохранится.">Закрыть доступ</ConfirmButton>

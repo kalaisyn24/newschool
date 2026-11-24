@@ -305,6 +305,9 @@ model Certificate {
   issuedAt  DateTime? // null = waiting for the admin to upload the certificate
   fileKey   String?   @db.VarChar(300) // uploaded PDF in storage
   fileSize  Int?
+  // Name printed on the certificate (null = taken from the profile / transliterated)
+  nameRu    String?   @db.VarChar(160)
+  nameLat   String?   @db.VarChar(160)
 
   @@unique([userId, courseId])
   @@index([issuedAt])

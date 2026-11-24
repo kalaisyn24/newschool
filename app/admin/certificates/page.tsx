@@ -6,12 +6,13 @@ import { Badge, EmptyState, PageHeader } from "@/components/ui";
 import { ActionForm, SubmitButton } from "@/components/forms";
 import { Icon } from "@/components/icons";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { uploadCertificate } from "./actions";
+import { certificateNames } from "@/lib/certificates";
+import { generateCertificate, uploadCertificate } from "./actions";
 
 export const metadata: Metadata = { title: "Сертификаты" };
 
 const tabs = [
-  { key: "pending", label: "Ожидают загрузки" },
+  { key: "pending", label: "Ожидают выдачи" },
   { key: "issued", label: "Выданные" },
 ] as const;
 
@@ -40,7 +41,7 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps<
     <>
       <PageHeader
         title="Сертификаты"
-        subtitle={pendingCount ? `Ожидают загрузки: ${pendingCount}` : "Все сертификаты выданы"}
+        subtitle={pendingCount ? `Ожидают выдачи: ${pendingCount}` : "Все сертификаты выданы"}
       />
       <div className="scroll-strip mb-5">
         {tabs.map((t) => (
@@ -76,7 +77,7 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps<
                     {c.issuedAt && ` · выдан ${formatDate(c.issuedAt)}`}
                   </p>
                 </div>
-                {c.issuedAt ? <Badge tone="green">Выдан</Badge> : <Badge tone="amber">Ожидает загрузки</Badge>}
+                {c.issuedAt ? <Badge tone="green">Выдан</Badge> : <Badge tone="amber">Ожидает выдачи</Badge>}
               </div>
               {c.fileKey && (
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -88,16 +89,38 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps<
               {c.issuedAt && !c.fileKey ? (
                 <p className="mt-3 text-xs text-slate-500">Сертификат выдан автоматически (до перехода на PDF). Можно загрузить PDF ниже.</p>
               ) : null}
-              <ActionForm action={uploadCertificate.bind(null, c.id)} resetOnSuccess className="mt-4 flex flex-wrap items-end gap-3">
-                <label className="min-w-60 flex-1">
-                  <span className="label">{c.fileKey ? "Заменить файл" : "PDF-сертификат"}</span>
-                  <input name="file" type="file" accept="application/pdf,.pdf" required className={fileInput} />
-                  <span className="hint block">Только PDF, до 20 МБ</span>
-                </label>
-                <SubmitButton className={c.fileKey ? "btn-secondary" : "btn-primary"} pendingText="Загружаем…">
-                  {c.fileKey ? "Заменить" : "Загрузить и выдать"}
-                </SubmitButton>
-              </ActionForm>
+              {(() => {
+                const n = certificateNames(c, c.user.name);
+                return (
+                  <ActionForm action={generateCertificate.bind(null, c.id)} className="mt-4 flex flex-wrap items-end gap-3">
+                    <label className="min-w-52 flex-1">
+                      <span className="label">Имя на русской странице</span>
+                      <input name="nameRu" defaultValue={n.ru} maxLength={160} className="input" />
+                    </label>
+                    <label className="min-w-52 flex-1">
+                      <span className="label">Имя на английской странице</span>
+                      <input name="nameLat" defaultValue={c.nameLat ?? ""} placeholder={n.lat} maxLength={160} className="input" />
+                      <span className="hint block">Пусто — транслитерация русского имени</span>
+                    </label>
+                    <SubmitButton className={c.fileKey ? "btn-secondary" : "btn-primary"} pendingText="Генерируем…">
+                      {c.fileKey ? "Перевыпустить" : "Сгенерировать и выдать"}
+                    </SubmitButton>
+                  </ActionForm>
+                );
+              })()}
+              <details className="mt-3">
+                <summary className="cursor-pointer text-xs text-slate-500 hover:text-slate-700">Загрузить свой PDF вручную</summary>
+                <ActionForm action={uploadCertificate.bind(null, c.id)} resetOnSuccess className="mt-3 flex flex-wrap items-end gap-3">
+                  <label className="min-w-60 flex-1">
+                    <span className="label">{c.fileKey ? "Заменить файл" : "PDF-сертификат"}</span>
+                    <input name="file" type="file" accept="application/pdf,.pdf" required className={fileInput} />
+                    <span className="hint block">Только PDF, до 20 МБ</span>
+                  </label>
+                  <SubmitButton className={c.fileKey ? "btn-secondary" : "btn-primary"} pendingText="Загружаем…">
+                    {c.fileKey ? "Заменить" : "Загрузить и выдать"}
+                  </SubmitButton>
+                </ActionForm>
+              </details>
             </div>
           ))}
         </div>
