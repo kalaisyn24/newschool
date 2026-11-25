@@ -7,6 +7,7 @@ const nav: NavItem[] = [
   { href: "/learn/catalog", label: "Каталог", icon: "compass", primary: true },
   { href: "/learn/history", label: "История обучения", icon: "history" },
   { href: "/learn/certificates", label: "Сертификаты", icon: "award" },
+  { href: "/learn/profiler-card", label: "Удостоверение профайлера", short: "Удостоверение", icon: "idcard" },
   { href: "/learn/notifications", label: "Уведомления", icon: "bell", primary: true },
   { href: "/learn/support", label: "Техподдержка", icon: "chat" },
   { href: "/learn/settings", label: "Настройки", icon: "settings" },

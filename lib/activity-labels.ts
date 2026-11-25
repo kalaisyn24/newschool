@@ -15,6 +15,7 @@ export const activityLabels: Record<string, string> = {
   test_failed: "Тест не сдан",
   assignment_submitted: "Отправлено задание",
   certificate_issued: "Получен сертификат",
+  profiler_card_issued: "Получено удостоверение профайлера",
 };
 
 export function activityLabel(action: string) {

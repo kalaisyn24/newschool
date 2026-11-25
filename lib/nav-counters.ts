@@ -13,16 +13,18 @@ export async function getNavCounters(user: CurrentUser): Promise<Record<string, 
   }
 
   const isAdmin = user.role === "ADMIN";
-  const [assignments, support, certificates] = await Promise.all([
+  const [assignments, support, certificates, profilerCards] = await Promise.all([
     db.assignmentSubmission.count({ where: { status: "SUBMITTED" } }),
     db.conversation.count({ where: { status: "OPEN", unreadByStaff: true } }),
     isAdmin ? db.certificate.count({ where: { issuedAt: null } }) : 0,
+    isAdmin ? db.profilerCard.count({ where: { issuedAt: null } }) : 0,
   ]);
   counters["/support"] = support;
   counters["/support/assignments"] = assignments;
   if (isAdmin) {
     counters["/admin/assignments"] = assignments;
     counters["/admin/certificates"] = certificates;
+    counters["/admin/profiler-cards"] = profilerCards;
     counters["/admin/notifications"] = notifications;
   }
   return counters;

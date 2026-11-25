@@ -7,6 +7,7 @@ import { Avatar, Badge, PageHeader, ProgressBar } from "@/components/ui";
 import { ActionForm, ConfirmButton, Field, NameFields, SubmitButton } from "@/components/forms";
 import { CourseAccessFields, ModulePicker } from "@/components/admin/module-picker";
 import { moduleAccessLabel } from "@/lib/module-access";
+import { addProfilerCard } from "../../profiler-cards/actions";
 import { splitName } from "@/lib/validation";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { activityLabel } from "@/lib/activity-labels";
@@ -32,7 +33,7 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
     include: {
       enrollments: {
         include: {
-          course: { select: { id: true, title: true, published: true, modules: { orderBy: { position: "asc" }, select: { id: true, title: true } } } },
+          course: { select: { id: true, title: true, published: true, profilerCardEnabled: true, modules: { orderBy: { position: "asc" }, select: { id: true, title: true } } } },
           grantedBy: { select: { name: true } },
           modules: { select: { moduleId: true } },
         },
@@ -40,6 +41,7 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
       },
       activities: { orderBy: { createdAt: "desc" }, take: 40 },
       certificates: { select: { id: true, courseId: true, issuedAt: true, fileKey: true } },
+      profilerCards: { select: { id: true, courseId: true, fileKey: true } },
       _count: { select: { sessions: true, testAttempts: true, conversations: true } },
     },
   });
@@ -85,6 +87,7 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
                 const st = states[i];
                 const active = enrollmentIsActive(e);
                 const cert = user.certificates.find((c) => c.courseId === e.courseId);
+                const card = user.profilerCards.find((c) => c.courseId === e.courseId);
                 return (
                   <div key={e.id} className="rounded-xl border border-slate-200 p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -127,6 +130,17 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
                           </ConfirmButton>
                         </ActionForm>
                       )}
+                      {card?.fileKey ? (
+                        <a href={`/api/profiler-cards/${card.id}`} target="_blank" rel="noreferrer" className="btn-secondary btn-sm">
+                          Удостоверение (PDF)
+                        </a>
+                      ) : card ? (
+                        <Link href="/admin/profiler-cards" className="btn-secondary btn-sm">Загрузить удостоверение</Link>
+                      ) : e.completedAt && e.course.profilerCardEnabled ? (
+                        <ActionForm action={addProfilerCard.bind(null, user.id, e.courseId)}>
+                          <SubmitButton className="btn-secondary btn-sm">Удостоверение профайлера</SubmitButton>
+                        </ActionForm>
+                      ) : null}
                       {active ? (
                         <form action={revokeAccess.bind(null, user.id, e.courseId)}>
                           <ConfirmButton className="btn-ghost btn-sm text-rose-600" message="Закрыть доступ к курсу? Прогресс сохранится.">Закрыть доступ</ConfirmButton>

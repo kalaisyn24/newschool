@@ -20,6 +20,7 @@ import { logActivity, notify } from "@/lib/activity";
 import { recomputeCourse, requestCertificate } from "@/lib/learning";
 import { issueGeneratedCertificate } from "@/lib/certificates";
 import { applyModuleSelection, readModuleSelection } from "@/lib/module-access";
+import { requestProfilerCard } from "@/lib/profiler-cards";
 
 const roleSchema = z.enum(["STUDENT", "ADMIN", "SUPPORT"]);
 
@@ -240,6 +241,7 @@ export async function completeCourseAndIssueCertificate(userId: string, courseId
     await db.enrollment.update({ where: { id: enrollment.id }, data: { completedAt: now } });
   }
   if (!enrollment?.completedAt) await logActivity(userId, "course_completed", course.title, `/learn/courses/${courseId}`);
+  await requestProfilerCard(userId, courseId);
 
   const { certificate } = await requestCertificate(userId, courseId);
   if (certificate.issuedAt && certificate.fileKey) {

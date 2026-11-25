@@ -41,7 +41,7 @@ function resolveKey(key: string) {
   return full;
 }
 
-export async function saveUpload(file: File, folder: "covers" | "materials" | "certificates" | "assignments", allowedExt: string[]) {
+export async function saveUpload(file: File, folder: "covers" | "materials" | "certificates" | "assignments" | "profiler-cards", allowedExt: string[]) {
   const ext = path.extname(file.name).slice(1).toLowerCase();
   if (!allowedExt.includes(ext)) throw new Error(`Недопустимый тип файла: .${ext || "?"}`);
   const key = `${folder}/${new Date().toISOString().slice(0, 7)}/${randomToken(12)}.${ext}`;

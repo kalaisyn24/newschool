@@ -57,16 +57,17 @@ model User {
 
   sessions       Session[]
   tokens         Token[]
-  enrollments    Enrollment[]       @relation("EnrollmentUser")
-  grants         Enrollment[]       @relation("EnrollmentGrantedBy")
+  enrollments    Enrollment[]           @relation("EnrollmentUser")
+  grants         Enrollment[]           @relation("EnrollmentGrantedBy")
   lessonProgress LessonProgress[]
   testAttempts   TestAttempt[]
   submissions    AssignmentSubmission[]
   notifications  Notification[]
   certificates   Certificate[]
+  profilerCards  ProfilerCard[]
   activities     ActivityLog[]
-  conversations  Conversation[]     @relation("ConversationStudent")
-  assignedChats  Conversation[]     @relation("ConversationAgent")
+  conversations  Conversation[]         @relation("ConversationStudent")
+  assignedChats  Conversation[]         @relation("ConversationAgent")
   messages       Message[]
 
   @@index([role])
@@ -101,34 +102,37 @@ model Token {
 }
 
 model Course {
-  id                 String       @id @default(cuid())
-  title              String       @db.VarChar(200)
-  shortDescription   String       @db.VarChar(500)
-  description        String       @db.Text
-  objectives         String       @db.Text // one item per line
-  coverUrl           String?      @db.VarChar(500)
-  teacherName        String?      @db.VarChar(160)
-  teacherBio         String?      @db.Text
-  published          Boolean      @default(false)
-  access             CourseAccess @default(BY_GRANT)
+  id                  String       @id @default(cuid())
+  title               String       @db.VarChar(200)
+  shortDescription    String       @db.VarChar(500)
+  description         String       @db.Text
+  objectives          String       @db.Text // one item per line
+  coverUrl            String?      @db.VarChar(500)
+  teacherName         String?      @db.VarChar(160)
+  teacherBio          String?      @db.Text
+  published           Boolean      @default(false)
+  access              CourseAccess @default(BY_GRANT)
   // Lesson gating: next lesson opens only after the previous one is completed
-  sequential         Boolean      @default(true)
-  certificateEnabled Boolean      @default(false)
-  position           Int          @default(0)
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  sequential          Boolean      @default(true)
+  certificateEnabled  Boolean      @default(false)
+  // after completion the admins are asked to upload a profiler ID card (PDF) for the student
+  profilerCardEnabled Boolean      @default(false)
+  position            Int          @default(0)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
 
-  modules      Module[]
-  enrollments  Enrollment[]
-  certificates Certificate[]
+  modules       Module[]
+  enrollments   Enrollment[]
+  certificates  Certificate[]
+  profilerCards ProfilerCard[]
 }
 
 model Module {
-  id       String   @id @default(cuid())
+  id       String             @id @default(cuid())
   courseId String
-  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  title    String   @db.VarChar(200)
-  position Int      @default(0)
+  course   Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title    String             @db.VarChar(200)
+  position Int                @default(0)
   lessons  Lesson[]
   grants   EnrollmentModule[]
 
@@ -163,15 +167,15 @@ model Lesson {
 }
 
 model LessonMaterial {
-  id         String   @id @default(cuid())
-  lessonId   String
-  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  title      String   @db.VarChar(200)
-  storageKey String?  @db.VarChar(300) // uploaded file
-  externalUrl String? @db.VarChar(500) // or an external link
-  mimeType   String?  @db.VarChar(120)
-  size       Int?
-  createdAt  DateTime @default(now())
+  id          String   @id @default(cuid())
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title       String   @db.VarChar(200)
+  storageKey  String?  @db.VarChar(300) // uploaded file
+  externalUrl String?  @db.VarChar(500) // or an external link
+  mimeType    String?  @db.VarChar(120)
+  size        Int?
+  createdAt   DateTime @default(now())
 }
 
 model Test {
@@ -225,16 +229,16 @@ model TestAttempt {
 }
 
 model Enrollment {
-  id           String           @id @default(cuid())
+  id           String             @id @default(cuid())
   userId       String
-  user         User             @relation("EnrollmentUser", fields: [userId], references: [id], onDelete: Cascade)
+  user         User               @relation("EnrollmentUser", fields: [userId], references: [id], onDelete: Cascade)
   courseId     String
-  course       Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  status       EnrollmentStatus @default(ACTIVE)
+  course       Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status       EnrollmentStatus   @default(ACTIVE)
   grantedById  String?
-  grantedBy    User?            @relation("EnrollmentGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
+  grantedBy    User?              @relation("EnrollmentGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
   expiresAt    DateTime?
-  createdAt    DateTime         @default(now())
+  createdAt    DateTime           @default(now())
   startedAt    DateTime?
   completedAt  DateTime?
   lastLessonId String?
@@ -247,7 +251,9 @@ model Enrollment {
   @@index([courseId])
 }
 
-/** A module opened to a student whose enrollment has allModules = false. */
+/**
+ * A module opened to a student whose enrollment has allModules = false.
+ */
 model EnrollmentModule {
   enrollmentId String
   enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
@@ -313,12 +319,12 @@ model Notification {
 }
 
 model Certificate {
-  id       String   @id @default(cuid())
-  number   String   @unique @db.VarChar(40)
-  userId   String
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId String
-  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id        String    @id @default(cuid())
+  number    String    @unique @db.VarChar(40)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
   // Created when the student completes the course; issued once the admin uploads the PDF.
   createdAt DateTime  @default(now())
   issuedAt  DateTime? // null = waiting for the admin to upload the certificate
@@ -327,6 +333,24 @@ model Certificate {
   // Name printed on the certificate (null = taken from the profile / transliterated)
   nameRu    String?   @db.VarChar(160)
   nameLat   String?   @db.VarChar(160)
+
+  @@unique([userId, courseId])
+  @@index([issuedAt])
+}
+
+/**
+ * "Удостоверение профайлера": requested when the course is completed, issued once the admin uploads the PDF.
+ */
+model ProfilerCard {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String
+  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  issuedAt  DateTime? // null = waiting for the admin to upload the PDF
+  fileKey   String?   @db.VarChar(300)
+  fileSize  Int?
 
   @@unique([userId, courseId])
   @@index([issuedAt])
@@ -345,19 +369,19 @@ model ActivityLog {
 }
 
 model Conversation {
-  id            String             @id @default(cuid())
-  subject       String             @db.VarChar(200)
-  studentId     String
-  student       User               @relation("ConversationStudent", fields: [studentId], references: [id], onDelete: Cascade)
-  agentId       String?
-  agent         User?              @relation("ConversationAgent", fields: [agentId], references: [id], onDelete: SetNull)
-  status        ConversationStatus @default(OPEN)
+  id              String             @id @default(cuid())
+  subject         String             @db.VarChar(200)
+  studentId       String
+  student         User               @relation("ConversationStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  agentId         String?
+  agent           User?              @relation("ConversationAgent", fields: [agentId], references: [id], onDelete: SetNull)
+  status          ConversationStatus @default(OPEN)
   // unread flags for each side
-  unreadByStudent Boolean          @default(false)
-  unreadByStaff   Boolean          @default(true)
-  createdAt     DateTime           @default(now())
-  lastMessageAt DateTime           @default(now())
-  messages      Message[]
+  unreadByStudent Boolean            @default(false)
+  unreadByStaff   Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  lastMessageAt   DateTime           @default(now())
+  messages        Message[]
 
   @@index([studentId])
   @@index([status, lastMessageAt])

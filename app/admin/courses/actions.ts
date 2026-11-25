@@ -89,6 +89,7 @@ export async function updateCourse(courseId: string, _: ActionState, fd: FormDat
       access: str(fd, "access") === "OPEN" ? "OPEN" : "BY_GRANT",
       sequential: bool(fd, "sequential"),
       certificateEnabled: bool(fd, "certificateEnabled"),
+      profilerCardEnabled: bool(fd, "profilerCardEnabled"),
       position: int(fd, "position", course.position),
     },
   });

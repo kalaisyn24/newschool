@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { notify, notifyAdmins, logActivity } from "@/lib/activity";
 import { randomToken } from "@/lib/crypto";
 import { issueGeneratedCertificate } from "@/lib/certificates";
+import { requestProfilerCard } from "@/lib/profiler-cards";
 
 export type LessonStatus = "completed" | "available" | "locked";
 export type CourseStatus = "available" | "in_progress" | "completed" | "blocked";
@@ -231,6 +232,11 @@ export async function recomputeCourse(userId: string, courseId: string) {
   if (!state || state.partial || state.total === 0 || state.completedCount < state.total) return;
   await db.enrollment.update({ where: { id: enrollment.id }, data: { completedAt: new Date() } });
   await logActivity(userId, "course_completed", state.course.title, `/learn/courses/${courseId}`);
+  try {
+    await requestProfilerCard(userId, courseId);
+  } catch (e) {
+    console.error("Profiler card request failed", e);
+  }
   if (!state.course.certificateEnabled) {
     await notify(
       userId,

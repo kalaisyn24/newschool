@@ -16,7 +16,7 @@ function daysAgo(days: number) {
 export default async function AdminHome() {
   await requireRole("ADMIN");
   const weekAgo = daysAgo(7);
-  const [students, newStudents, courses, published, enrollments, completed, openChats, pendingSubs, pendingCerts, recentUsers, recentActivity] =
+  const [students, newStudents, courses, published, enrollments, completed, openChats, pendingSubs, pendingCerts, pendingCards, recentUsers, recentActivity] =
     await Promise.all([
       db.user.count({ where: { role: "STUDENT" } }),
       db.user.count({ where: { role: "STUDENT", createdAt: { gte: weekAgo } } }),
@@ -27,6 +27,7 @@ export default async function AdminHome() {
       db.conversation.count({ where: { status: "OPEN", unreadByStaff: true } }),
       db.assignmentSubmission.count({ where: { status: "SUBMITTED" } }),
       db.certificate.count({ where: { issuedAt: null } }),
+      db.profilerCard.count({ where: { issuedAt: null } }),
       db.user.findMany({ orderBy: { createdAt: "desc" }, take: 6, select: { id: true, name: true, email: true, createdAt: true } }),
       db.activityLog.findMany({
         where: { action: { not: "login" } },
@@ -53,12 +54,13 @@ export default async function AdminHome() {
         <StatCard label="Активных доступов" value={enrollments} hint={`завершений курсов: ${completed}`} icon={<Icon name="chart" />} />
         <StatCard
           label="Требуют внимания"
-          value={openChats + pendingSubs + pendingCerts}
+          value={openChats + pendingSubs + pendingCerts + pendingCards}
           hint={
-            <span className="flex gap-3">
+            <span className="flex flex-wrap gap-x-3">
               <Link href="/support" className="link-plain">чатов: {openChats}</Link>
               <Link href="/admin/assignments" className="link-plain">заданий: {pendingSubs}</Link>
               <Link href="/admin/certificates" className="link-plain">сертификатов: {pendingCerts}</Link>
+              <Link href="/admin/profiler-cards" className="link-plain">удостоверений: {pendingCards}</Link>
             </span>
           }
           icon={<Icon name="bell" />}
