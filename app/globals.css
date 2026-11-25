@@ -96,15 +96,16 @@
 
 body {
   position: relative;
-  background: oklch(95.5% 0.008 200);
+  background: oklch(90% 0.014 215);
   color: var(--foreground);
   font-weight: 400;
   -webkit-tap-highlight-color: transparent;
 }
 
 /*
- * App background (fixed layer, works on iOS too): warm off-white in the
- * top-left drifting into a cool, faintly mint-grey in the bottom-right.
+ * App background (fixed layers, work on iOS too): a muted warm grey in the
+ * top-left drifting into a deeper cool slate-blue in the bottom-right,
+ * with soft gradient waves along the bottom and a faint one across the top.
  */
 body::before {
   content: "";
@@ -112,7 +113,20 @@ body::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: linear-gradient(155deg, oklch(97.5% 0.006 85) 0%, oklch(95.5% 0.008 200) 60%, oklch(92.5% 0.014 210) 100%);
+  background:
+    radial-gradient(60% 50% at 85% 10%, oklch(80% 0.05 240 / 0.35), transparent 70%),
+    radial-gradient(50% 45% at 10% 85%, oklch(78% 0.04 200 / 0.3), transparent 70%),
+    linear-gradient(155deg, oklch(93.5% 0.008 85) 0%, oklch(90% 0.014 215) 55%, oklch(85.5% 0.022 230) 100%);
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 900' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='t' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%23149be0' stop-opacity='.18'/%3E%3Cstop offset='.7' stop-color='%239fb7ba' stop-opacity='.06'/%3E%3Cstop offset='1' stop-color='%239fb7ba' stop-opacity='0'/%3E%3C/linearGradient%3E%3ClinearGradient id='a' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%239fb7ba' stop-opacity='.08'/%3E%3Cstop offset='.55' stop-color='%237f9ca0' stop-opacity='.26'/%3E%3Cstop offset='1' stop-color='%233a6ef2' stop-opacity='.24'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233a6ef2' stop-opacity='.16'/%3E%3Cstop offset='1' stop-color='%23149be0' stop-opacity='.3'/%3E%3C/linearGradient%3E%3ClinearGradient id='c' x1='1' x2='0'%3E%3Cstop offset='0' stop-color='%230f1a2e' stop-opacity='.2'/%3E%3Cstop offset='1' stop-color='%237f9ca0' stop-opacity='.12'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='url(%23t)' d='M0 0h1440v70c-260 80-460-30-760 20S220 180 0 110Z'/%3E%3Cpath fill='url(%23a)' d='M0 630c230-95 430 40 710-20s470-160 730-60v350H0Z'/%3E%3Cpath fill='url(%23b)' d='M0 715c270-75 470 60 770 0s430-120 670-40v265H0Z'/%3E%3Cpath fill='url(%23c)' d='M0 805c300-55 520 50 820 10s420-75 620-20v105H0Z'/%3E%3Cg fill='none' stroke='%23fff' vector-effect='non-scaling-stroke'%3E%3Cpath stroke-opacity='.55' stroke-width='1.5' vector-effect='non-scaling-stroke' d='M0 630c230-95 430 40 710-20s470-160 730-60'/%3E%3Cpath stroke-opacity='.35' stroke-width='1' vector-effect='non-scaling-stroke' d='M0 715c270-75 470 60 770 0s430-120 670-40'/%3E%3C/g%3E%3C/svg%3E")
+    center / 100% 100% no-repeat;
 }
 
 /* Montserrat SemiBold — headings, Montserrat Regular — text */
@@ -300,7 +314,8 @@ h6 {
   body {
     background: #fff;
   }
-  body::before {
+  body::before,
+  body::after {
     display: none;
   }
 }
