@@ -57,7 +57,17 @@ export async function getLastLesson(userId: string) {
   const p = await db.lessonProgress.findFirst({
     where: {
       userId,
-      lesson: { published: true, module: { course: { published: true, enrollments: { some: { userId, status: "ACTIVE" } } } } },
+      lesson: {
+        published: true,
+        module: {
+          course: { published: true },
+          // the whole course is open, or this module is among the opened ones
+          OR: [
+            { course: { enrollments: { some: { userId, status: "ACTIVE", allModules: true } } } },
+            { grants: { some: { enrollment: { userId, status: "ACTIVE" } } } },
+          ],
+        },
+      },
     },
     orderBy: { lastViewedAt: "desc" },
     include: {

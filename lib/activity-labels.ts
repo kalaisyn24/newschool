@@ -8,6 +8,7 @@ export const activityLabels: Record<string, string> = {
   enrolled: "Запись на курс",
   access_granted: "Открыт доступ к курсу",
   access_revoked: "Закрыт доступ к курсу",
+  modules_changed: "Изменён доступ к модулям",
   lesson_completed: "Урок пройден",
   course_completed: "Курс завершён",
   test_passed: "Тест сдан",

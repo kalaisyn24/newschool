@@ -19,6 +19,7 @@ import { sendPasswordResetEmail } from "@/lib/tokens";
 import { logActivity, notify } from "@/lib/activity";
 import { recomputeCourse, requestCertificate } from "@/lib/learning";
 import { issueGeneratedCertificate } from "@/lib/certificates";
+import { applyModuleSelection, readModuleSelection } from "@/lib/module-access";
 
 const roleSchema = z.enum(["STUDENT", "ADMIN", "SUPPORT"]);
 
@@ -119,16 +120,43 @@ export async function grantAccess(userId: string, _: ActionState, fd: FormData):
   if (!courseId) return { error: "Выберите курс" };
   const course = await db.course.findUnique({ where: { id: courseId }, select: { title: true } });
   if (!course) return { error: "Курс не найден" };
+  const sel = await readModuleSelection(fd, courseId);
+  if ("error" in sel) return { error: sel.error };
   const expiresAt = until ? new Date(`${until}T23:59:59`) : null;
-  await db.enrollment.upsert({
+  const enrollment = await db.enrollment.upsert({
     where: { userId_courseId: { userId, courseId } },
     create: { userId, courseId, grantedById: admin.id, expiresAt },
     update: { status: "ACTIVE", grantedById: admin.id, expiresAt },
   });
+  await applyModuleSelection(enrollment.id, sel, false);
   await logActivity(userId, "access_granted", course.title, `/learn/courses/${courseId}`);
   await notify(userId, `Вам открыт доступ к курсу «${course.title}»`, undefined, `/learn/courses/${courseId}`);
   refresh();
-  return { ok: true, message: `Доступ к курсу «${course.title}» открыт` };
+  return {
+    ok: true,
+    message: `Доступ к курсу «${course.title}» открыт${sel.allModules ? "" : ` (модулей: ${sel.moduleIds.length})`}`,
+  };
+}
+
+/** Changes which modules of the course are open to an already enrolled student. */
+export async function updateEnrollmentModules(userId: string, courseId: string, _: ActionState, fd: FormData): Promise<ActionState> {
+  await requireRole("ADMIN");
+  const enrollment = await db.enrollment.findUnique({
+    where: { userId_courseId: { userId, courseId } },
+    select: { id: true, course: { select: { title: true } } },
+  });
+  if (!enrollment) return { error: "Студент не записан на курс" };
+  const sel = await readModuleSelection(fd, courseId);
+  if ("error" in sel) return { error: sel.error };
+  await applyModuleSelection(enrollment.id, sel);
+  await logActivity(
+    userId,
+    "modules_changed",
+    `${enrollment.course.title}: ${sel.allModules ? "все модули" : `модулей ${sel.moduleIds.length}`}`,
+    `/learn/courses/${courseId}`,
+  );
+  refresh();
+  return { ok: true, message: sel.allModules ? "Открыты все модули курса" : `Открыто модулей: ${sel.moduleIds.length}` };
 }
 
 export async function revokeAccess(userId: string, courseId: string) {

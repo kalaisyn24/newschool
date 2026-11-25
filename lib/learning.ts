@@ -61,9 +61,22 @@ export function enrollmentIsActive(e: { status: string; expiresAt: Date | null }
   return Boolean(e && e.status === "ACTIVE" && (!e.expiresAt || e.expiresAt > new Date()));
 }
 
+/**
+ * Module ids open to the student, or null when the whole course is open
+ * (no enrollment, or an enrollment with allModules = true).
+ */
+export async function getOpenModuleIds(userId: string, courseId: string): Promise<Set<string> | null> {
+  const e = await db.enrollment.findUnique({
+    where: { userId_courseId: { userId, courseId } },
+    select: { allModules: true, modules: { select: { moduleId: true } } },
+  });
+  if (!e || e.allModules) return null;
+  return new Set(e.modules.map((m) => m.moduleId));
+}
+
 /** Builds the course with per-lesson statuses for the given user. */
 export async function getCourseState(userId: string, courseId: string) {
-  const course = await getCourseTree(courseId);
+  const [course, openModules] = await Promise.all([getCourseTree(courseId), getOpenModuleIds(userId, courseId)]);
   if (!course) return null;
   const lessonIds = course.modules.flatMap((m) => m.lessons.map((l) => l.id));
   const progress = await db.lessonProgress.findMany({ where: { userId, lessonId: { in: lessonIds } } });
@@ -71,31 +84,43 @@ export async function getCourseState(userId: string, courseId: string) {
 
   let prevCompleted = true;
   let completedCount = 0;
+  let total = 0;
+  let totalDuration = 0;
   let nextLessonId: string | null = null;
-  const modules = course.modules.map((m) => ({
-    ...m,
-    lessons: m.lessons.map((l) => {
-      const p = byLesson.get(l.id);
-      const completed = Boolean(p?.completedAt);
-      let status: LessonStatus;
-      if (completed) status = "completed";
-      else if (!course.sequential || prevCompleted) status = "available";
-      else status = "locked";
-      if (completed) completedCount++;
-      if (!nextLessonId && status === "available") nextLessonId = l.id;
-      prevCompleted = completed;
-      return { ...l, status, progress: p ?? null };
-    }),
-  }));
-  const total = lessonIds.length;
+  const modules = course.modules.map((m) => {
+    // A module not opened to the student: its lessons are locked and skipped by sequential gating.
+    const closed = Boolean(openModules && !openModules.has(m.id));
+    return {
+      ...m,
+      closed,
+      lessons: m.lessons.map((l) => {
+        const p = byLesson.get(l.id);
+        if (closed) return { ...l, status: "locked" as LessonStatus, progress: p ?? null };
+        const completed = Boolean(p?.completedAt);
+        let status: LessonStatus;
+        if (completed) status = "completed";
+        else if (!course.sequential || prevCompleted) status = "available";
+        else status = "locked";
+        total++;
+        totalDuration += l.durationSec;
+        if (completed) completedCount++;
+        if (!nextLessonId && status === "available") nextLessonId = l.id;
+        prevCompleted = completed;
+        return { ...l, status, progress: p ?? null };
+      }),
+    };
+  });
   return {
     course,
     modules,
+    /** true when some modules are closed for this student */
+    partial: Boolean(openModules && modules.some((m) => m.closed)),
+    // counters cover only the modules open to the student
     total,
     completedCount,
     percent: total ? Math.round((completedCount / total) * 100) : 0,
     nextLessonId: nextLessonId as string | null,
-    totalDuration: course.modules.reduce((s, m) => s + m.lessons.reduce((a, l) => a + l.durationSec, 0), 0),
+    totalDuration,
   };
 }
 
@@ -133,7 +158,12 @@ export async function getLessonAccess(userId: string, lessonId: string, opts: { 
   if (!hasAccess && !preview) return { ok: false as const, reason: "no_access" as const, courseId };
   const state = await getCourseState(userId, courseId);
   if (!state) return { ok: false as const, reason: "not_found" as const };
-  const flat = state.modules.flatMap((m) => m.lessons.map((l) => ({ ...l, moduleTitle: m.title })));
+  if (!preview && state.modules.some((m) => m.closed && m.lessons.some((l) => l.id === lessonId)))
+    return { ok: false as const, reason: "locked" as const, courseId };
+  // prev / next skip modules closed for the student (an admin preview walks through everything)
+  const flat = state.modules
+    .filter((m) => preview || !m.closed)
+    .flatMap((m) => m.lessons.map((l) => ({ ...l, moduleTitle: m.title })));
   const index = flat.findIndex((l) => l.id === lessonId);
   const entry = flat[index];
   if (!entry && !preview) return { ok: false as const, reason: "not_found" as const };
@@ -197,7 +227,8 @@ export async function recomputeCourse(userId: string, courseId: string) {
   const enrollment = await getEnrollment(userId, courseId);
   if (!enrollment || enrollment.completedAt) return;
   const state = await getCourseState(userId, courseId);
-  if (!state || state.total === 0 || state.completedCount < state.total) return;
+  // with only some modules open the course (and its certificate) is not complete
+  if (!state || state.partial || state.total === 0 || state.completedCount < state.total) return;
   await db.enrollment.update({ where: { id: enrollment.id }, data: { completedAt: new Date() } });
   await logActivity(userId, "course_completed", state.course.title, `/learn/courses/${courseId}`);
   if (!state.course.certificateEnabled) {

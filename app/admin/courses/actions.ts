@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { bool, int, str, type ActionState } from "@/lib/action-state";
 import { deleteUpload, IMAGE_TYPES, keyFromMediaUrl, mediaUrl, saveUpload } from "@/lib/storage";
+import { applyModuleSelection, readModuleSelection } from "@/lib/module-access";
 
 const courseSchema = z.object({
   title: z.string().trim().min(3, "Название — минимум 3 символа").max(200),
@@ -197,20 +198,39 @@ export async function grantByEmail(courseId: string, _: ActionState, fd: FormDat
     .filter(Boolean);
   if (!emails.length) return { error: "Укажите e-mail" };
   const course = await db.course.findUniqueOrThrow({ where: { id: courseId }, select: { title: true } });
+  const sel = await readModuleSelection(fd, courseId);
+  if ("error" in sel) return { error: sel.error };
   const users = await db.user.findMany({ where: { email: { in: emails } } });
   const missing = emails.filter((e) => !users.some((u) => u.email === e));
+  let opened = 0;
+  let changed = 0;
   for (const u of users) {
-    await db.enrollment.upsert({
+    const existing = await db.enrollment.findUnique({
+      where: { userId_courseId: { userId: u.id, courseId } },
+      select: { status: true },
+    });
+    const enrollment = await db.enrollment.upsert({
       where: { userId_courseId: { userId: u.id, courseId } },
       create: { userId: u.id, courseId, grantedById: admin.id },
       update: { status: "ACTIVE", grantedById: admin.id },
     });
-    await db.notification.create({
-      data: { userId: u.id, title: `Вам открыт доступ к курсу «${course.title}»`, link: `/learn/courses/${courseId}` },
-    });
-    await db.activityLog.create({ data: { userId: u.id, action: "access_granted", details: course.title } });
+    // already active: only the set of modules changes (the student hears about newly opened modules)
+    const wasActive = existing?.status === "ACTIVE";
+    await applyModuleSelection(enrollment.id, sel, wasActive);
+    const label = `${course.title}${sel.allModules ? "" : `: модулей ${sel.moduleIds.length}`}`;
+    if (wasActive) {
+      changed++;
+      await db.activityLog.create({ data: { userId: u.id, action: "modules_changed", details: label } });
+    } else {
+      opened++;
+      await db.notification.create({
+        data: { userId: u.id, title: `Вам открыт доступ к курсу «${course.title}»`, link: `/learn/courses/${courseId}` },
+      });
+      await db.activityLog.create({ data: { userId: u.id, action: "access_granted", details: label } });
+    }
   }
   refresh();
-  if (missing.length) return { error: `Доступ открыт: ${users.length}. Не найдены пользователи: ${missing.join(", ")}` };
-  return { ok: true, message: `Доступ открыт: ${users.length}` };
+  const summary = `Доступ открыт: ${opened}` + (changed ? `, модули изменены у записанных ранее: ${changed}` : "");
+  if (missing.length) return { error: `${summary}. Не найдены пользователи: ${missing.join(", ")}` };
+  return { ok: true, message: summary };
 }

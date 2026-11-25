@@ -27,8 +27,11 @@ export default async function CoursePage({ params }: PageProps<"/learn/courses/[
     : null;
   const { course } = state;
   const objectives = course.objectives.split("\n").map((s) => s.trim()).filter(Boolean);
-  const continueId = enrollment?.lastLessonId && !enrollment.completedAt ? state.nextLessonId ?? enrollment.lastLessonId : state.nextLessonId;
-  const firstLesson = state.modules.flatMap((m) => m.lessons)[0];
+  // lessons the user can open: modules closed for the student are skipped (admins see everything)
+  const openLessons = state.modules.filter((m) => isStaff || !m.closed).flatMap((m) => m.lessons);
+  const lastLessonId = openLessons.some((l) => l.id === enrollment?.lastLessonId) ? enrollment!.lastLessonId : null;
+  const continueId = lastLessonId && !enrollment?.completedAt ? state.nextLessonId ?? lastLessonId : state.nextLessonId;
+  const firstLesson = openLessons[0];
   let n = 0;
 
   return (
@@ -103,6 +106,12 @@ export default async function CoursePage({ params }: PageProps<"/learn/courses/[
         </Alert>
       )}
 
+      {hasAccess && state.partial && (
+        <Alert tone="amber">
+          Вам открыты не все модули курса. Чтобы получить доступ к остальным модулям, обратитесь в поддержку.
+        </Alert>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <section className="space-y-4">
           <h2 className="text-lg font-semibold text-slate-900">Программа курса</h2>
@@ -115,7 +124,11 @@ export default async function CoursePage({ params }: PageProps<"/learn/courses/[
                     <p className="text-xs font-medium tracking-wide text-slate-400 uppercase">Модуль {mi + 1}</p>
                     <p className="font-semibold text-slate-900">{m.title}</p>
                   </div>
-                  <span className="text-xs text-slate-500">{done}/{m.lessons.length}</span>
+                  {m.closed && !isStaff ? (
+                    <Badge tone="slate">Нет доступа</Badge>
+                  ) : (
+                    <span className="text-xs text-slate-500">{done}/{m.lessons.length}</span>
+                  )}
                 </div>
                 <ul className="divide-y divide-slate-100">
                   {m.lessons.map((l) => {

@@ -6,6 +6,8 @@ import { getCourseState, enrollmentIsActive } from "@/lib/learning";
 import { Avatar, Badge, EmptyState, PageHeader, ProgressBar, Table } from "@/components/ui";
 import { ActionForm, ConfirmButton, Field, SubmitButton } from "@/components/forms";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { ModulePicker } from "@/components/admin/module-picker";
+import { moduleAccessLabel } from "@/lib/module-access";
 import { completeCourseAndIssueCertificate, revokeAccess, restoreAccess } from "../../../users/actions";
 import { grantByEmail } from "../../actions";
 
@@ -15,7 +17,11 @@ export default async function CourseStudentsPage({ params }: PageProps<"/admin/c
   const course = await db.course.findUnique({
     where: { id },
     include: {
-      enrollments: { include: { user: { select: { id: true, name: true, email: true } } }, orderBy: { createdAt: "desc" } },
+      enrollments: {
+        include: { user: { select: { id: true, name: true, email: true } }, modules: { select: { moduleId: true } } },
+        orderBy: { createdAt: "desc" },
+      },
+      modules: { orderBy: { position: "asc" }, select: { id: true, title: true } },
       certificates: { select: { id: true, userId: true, fileKey: true } },
     },
   });
@@ -33,11 +39,15 @@ export default async function CourseStudentsPage({ params }: PageProps<"/admin/c
         subtitle={`С доступом: ${active} · завершили: ${done} · средний прогресс: ${avg}%`}
       />
       <div className="card mb-6 p-5">
-        <ActionForm action={grantByEmail.bind(null, id)} resetOnSuccess className="flex flex-wrap items-end gap-2">
-          <Field label="Открыть доступ по e-mail" hint="Можно несколько адресов через запятую или пробел" className="min-w-72 flex-1">
-            <input name="emails" className="input" placeholder="student@example.com, other@example.com" />
+        <ActionForm action={grantByEmail.bind(null, id)} className="space-y-3">
+          <Field
+            label="Открыть доступ или изменить модули по e-mail"
+            hint="Можно несколько адресов через запятую, пробел или с новой строки. Тем, кто уже записан на курс, будет установлен выбранный набор модулей."
+          >
+            <textarea name="emails" rows={2} className="input" placeholder="student@example.com, other@example.com" />
           </Field>
-          <SubmitButton>Открыть доступ</SubmitButton>
+          <ModulePicker modules={course.modules} />
+          <SubmitButton>Применить</SubmitButton>
         </ActionForm>
       </div>
       {course.enrollments.length === 0 ? (
@@ -49,6 +59,7 @@ export default async function CourseStudentsPage({ params }: PageProps<"/admin/c
               <th>Студент</th>
               <th>Прогресс</th>
               <th>Доступ</th>
+              <th>Модули</th>
               <th>Последняя активность</th>
               <th>Завершён</th>
               <th></th>
@@ -78,6 +89,9 @@ export default async function CourseStudentsPage({ params }: PageProps<"/admin/c
                   </td>
                   <td>
                     {isActive ? <Badge tone="green">Открыт{e.expiresAt ? ` до ${formatDate(e.expiresAt)}` : ""}</Badge> : <Badge tone="red">Закрыт</Badge>}
+                  </td>
+                  <td>
+                    <Badge tone={e.allModules ? "slate" : "amber"}>{moduleAccessLabel(e, course.modules.length)}</Badge>
                   </td>
                   <td className="text-slate-500">{formatDateTime(e.lastAccessAt)}</td>
                   <td className="text-slate-500">{e.completedAt ? formatDate(e.completedAt) : "—"}</td>

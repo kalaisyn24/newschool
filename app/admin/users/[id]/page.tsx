@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { getCourseState, enrollmentIsActive } from "@/lib/learning";
 import { Avatar, Badge, PageHeader, ProgressBar } from "@/components/ui";
 import { ActionForm, ConfirmButton, Field, NameFields, SubmitButton } from "@/components/forms";
+import { CourseAccessFields, ModulePicker } from "@/components/admin/module-picker";
+import { moduleAccessLabel } from "@/lib/module-access";
 import { splitName } from "@/lib/validation";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { activityLabel } from "@/lib/activity-labels";
@@ -18,6 +20,7 @@ import {
   sendResetLink,
   setBlocked,
   setPassword,
+  updateEnrollmentModules,
   updateUser,
 } from "../actions";
 
@@ -27,7 +30,14 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
   const user = await db.user.findUnique({
     where: { id },
     include: {
-      enrollments: { include: { course: { select: { id: true, title: true, published: true } }, grantedBy: { select: { name: true } } }, orderBy: { createdAt: "desc" } },
+      enrollments: {
+        include: {
+          course: { select: { id: true, title: true, published: true, modules: { orderBy: { position: "asc" }, select: { id: true, title: true } } } },
+          grantedBy: { select: { name: true } },
+          modules: { select: { moduleId: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      },
       activities: { orderBy: { createdAt: "desc" }, take: 40 },
       certificates: { select: { id: true, courseId: true, issuedAt: true, fileKey: true } },
       _count: { select: { sessions: true, testAttempts: true, conversations: true } },
@@ -35,7 +45,10 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
   });
   if (!user) notFound();
   const [courses, states] = await Promise.all([
-    db.course.findMany({ orderBy: { title: "asc" }, select: { id: true, title: true } }),
+    db.course.findMany({
+      orderBy: { title: "asc" },
+      select: { id: true, title: true, modules: { orderBy: { position: "asc" }, select: { id: true, title: true } } },
+    }),
     Promise.all(user.enrollments.map((e) => getCourseState(user.id, e.courseId))),
   ]);
   const enrolledIds = new Set(user.enrollments.filter((e) => e.status === "ACTIVE").map((e) => e.courseId));
@@ -89,6 +102,7 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
                       <div className="flex items-center gap-2">
                         {e.completedAt ? <Badge tone="green">Завершён {formatDate(e.completedAt)}</Badge> : null}
                         {!active && <Badge tone="red">{e.status === "REVOKED" ? "Доступ закрыт" : "Истёк"}</Badge>}
+                        <Badge tone={e.allModules ? "slate" : "amber"}>{moduleAccessLabel(e, e.course.modules.length)}</Badge>
                       </div>
                     </div>
                     {st && (
@@ -123,27 +137,34 @@ export default async function AdminUserPage({ params }: PageProps<"/admin/users/
                         </form>
                       )}
                     </div>
+                    {e.course.modules.length > 0 && (
+                      <details className="mt-3 rounded-lg bg-slate-50 px-3 py-2">
+                        <summary className="cursor-pointer text-sm font-medium text-slate-700">Доступ к модулям</summary>
+                        <ActionForm action={updateEnrollmentModules.bind(null, user.id, e.courseId)} className="mt-3 space-y-3">
+                          <ModulePicker
+                            modules={e.course.modules}
+                            defaultAll={e.allModules}
+                            defaultSelected={e.modules.map((m) => m.moduleId)}
+                          />
+                          <SubmitButton className="btn-secondary btn-sm">Сохранить модули</SubmitButton>
+                        </ActionForm>
+                      </details>
+                    )}
                   </div>
                 );
               })}
             </div>
             <ActionForm action={grantAccess.bind(null, user.id)} className="mt-5 rounded-xl bg-slate-50 p-4">
               <p className="mb-3 text-sm font-medium text-slate-800">Открыть доступ к курсу</p>
-              <div className="flex flex-wrap items-end gap-2">
-                <label className="min-w-48 flex-1">
-                  <span className="label text-xs">Курс</span>
-                  <select name="courseId" className="input" required defaultValue="">
-                    <option value="" disabled>Выберите курс…</option>
-                    {courses.filter((c) => !enrolledIds.has(c.id)).map((c) => (
-                      <option key={c.id} value={c.id}>{c.title}</option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <span className="label text-xs">Доступ до (необязательно)</span>
-                  <input type="date" name="expiresAt" className="input" />
-                </label>
-                <SubmitButton>Открыть</SubmitButton>
+              <div className="space-y-3">
+                <CourseAccessFields courses={courses.filter((c) => !enrolledIds.has(c.id))} />
+                <div className="flex flex-wrap items-end gap-2">
+                  <label>
+                    <span className="label text-xs">Доступ до (необязательно)</span>
+                    <input type="date" name="expiresAt" className="input" />
+                  </label>
+                  <SubmitButton>Открыть</SubmitButton>
+                </div>
               </div>
             </ActionForm>
           </section>

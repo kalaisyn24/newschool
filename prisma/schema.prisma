@@ -130,6 +130,7 @@ model Module {
   title    String   @db.VarChar(200)
   position Int      @default(0)
   lessons  Lesson[]
+  grants   EnrollmentModule[]
 
   @@index([courseId, position])
 }
@@ -238,9 +239,23 @@ model Enrollment {
   completedAt  DateTime?
   lastLessonId String?
   lastAccessAt DateTime?
+  // false = only the modules listed in `modules` are open to the student
+  allModules   Boolean            @default(true)
+  modules      EnrollmentModule[]
 
   @@unique([userId, courseId])
   @@index([courseId])
+}
+
+/** A module opened to a student whose enrollment has allModules = false. */
+model EnrollmentModule {
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  moduleId     String
+  module       Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@id([enrollmentId, moduleId])
+  @@index([moduleId])
 }
 
 model LessonProgress {

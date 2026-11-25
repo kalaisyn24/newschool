@@ -39,7 +39,10 @@ export default async function UserCourseProgressPage({ params }: PageProps<"/adm
       </div>
       {state.modules.map((m) => (
         <section key={m.id} className="mb-6">
-          <h2 className="mb-2 font-semibold text-slate-900">{m.title}</h2>
+          <h2 className="mb-2 flex items-center gap-2 font-semibold text-slate-900">
+            {m.title}
+            {m.closed && <Badge tone="amber">Модуль закрыт для студента</Badge>}
+          </h2>
           <Table>
             <thead>
               <tr>
