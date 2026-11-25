@@ -96,16 +96,16 @@
 
 body {
   position: relative;
-  background: oklch(90% 0.014 215);
+  background: oklch(95.5% 0.008 200);
   color: var(--foreground);
   font-weight: 400;
   -webkit-tap-highlight-color: transparent;
 }
 
 /*
- * App background (fixed layers, work on iOS too): a muted warm grey in the
- * top-left drifting into a deeper cool slate-blue in the bottom-right,
- * with soft gradient waves along the bottom and a faint one across the top.
+ * App background (fixed layers, work on iOS too): warm off-white in the top-left
+ * drifting into a cool, faintly mint-grey in the bottom-right, mixed with soft spots
+ * and blurred waves in the same tones.
  */
 body::before {
   content: "";
@@ -114,9 +114,12 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(60% 50% at 85% 10%, oklch(80% 0.05 240 / 0.35), transparent 70%),
-    radial-gradient(50% 45% at 10% 85%, oklch(78% 0.04 200 / 0.3), transparent 70%),
-    linear-gradient(155deg, oklch(93.5% 0.008 85) 0%, oklch(90% 0.014 215) 55%, oklch(85.5% 0.022 230) 100%);
+    radial-gradient(38% 34% at 18% 22%, #f9f6f2 0%, transparent 100%),
+    radial-gradient(34% 30% at 82% 30%, #d9e4e4 0%, transparent 100%),
+    radial-gradient(30% 28% at 55% 58%, #f9f6f2b3 0%, transparent 100%),
+    radial-gradient(36% 32% at 12% 78%, #dce9eb 0%, transparent 100%),
+    radial-gradient(32% 30% at 90% 84%, #c9d9dcb3 0%, transparent 100%),
+    linear-gradient(155deg, oklch(97.5% 0.006 85) 0%, oklch(95.5% 0.008 200) 60%, oklch(92.5% 0.014 210) 100%);
 }
 
 body::after {
@@ -125,8 +128,20 @@ body::after {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 900' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='t' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%23149be0' stop-opacity='.18'/%3E%3Cstop offset='.7' stop-color='%239fb7ba' stop-opacity='.06'/%3E%3Cstop offset='1' stop-color='%239fb7ba' stop-opacity='0'/%3E%3C/linearGradient%3E%3ClinearGradient id='a' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%239fb7ba' stop-opacity='.08'/%3E%3Cstop offset='.55' stop-color='%237f9ca0' stop-opacity='.26'/%3E%3Cstop offset='1' stop-color='%233a6ef2' stop-opacity='.24'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233a6ef2' stop-opacity='.16'/%3E%3Cstop offset='1' stop-color='%23149be0' stop-opacity='.3'/%3E%3C/linearGradient%3E%3ClinearGradient id='c' x1='1' x2='0'%3E%3Cstop offset='0' stop-color='%230f1a2e' stop-opacity='.2'/%3E%3Cstop offset='1' stop-color='%237f9ca0' stop-opacity='.12'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='url(%23t)' d='M0 0h1440v70c-260 80-460-30-760 20S220 180 0 110Z'/%3E%3Cpath fill='url(%23a)' d='M0 630c230-95 430 40 710-20s470-160 730-60v350H0Z'/%3E%3Cpath fill='url(%23b)' d='M0 715c270-75 470 60 770 0s430-120 670-40v265H0Z'/%3E%3Cpath fill='url(%23c)' d='M0 805c300-55 520 50 820 10s420-75 620-20v105H0Z'/%3E%3Cg fill='none' stroke='%23fff' vector-effect='non-scaling-stroke'%3E%3Cpath stroke-opacity='.55' stroke-width='1.5' vector-effect='non-scaling-stroke' d='M0 630c230-95 430 40 710-20s470-160 730-60'/%3E%3Cpath stroke-opacity='.35' stroke-width='1' vector-effect='non-scaling-stroke' d='M0 715c270-75 470 60 770 0s430-120 670-40'/%3E%3C/g%3E%3C/svg%3E")
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 900' preserveAspectRatio='none'%3E%3Cdefs%3E%3Cfilter id='s' x='-10%25' y='-10%25' width='120%25' height='120%25'%3E%3CfeGaussianBlur stdDeviation='14'/%3E%3C/filter%3E%3ClinearGradient id='t' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%23c9d9dc' stop-opacity='.5'/%3E%3Cstop offset='1' stop-color='%23eaf2f2' stop-opacity='0'/%3E%3C/linearGradient%3E%3ClinearGradient id='a' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%23ebe7e0' stop-opacity='.7'/%3E%3Cstop offset='.5' stop-color='%23d9e4e4' stop-opacity='.75'/%3E%3Cstop offset='1' stop-color='%23c9d9dc' stop-opacity='.8'/%3E%3C/linearGradient%3E%3ClinearGradient id='b' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23d9e4e4' stop-opacity='.7'/%3E%3Cstop offset='1' stop-color='%23bdced2' stop-opacity='.75'/%3E%3C/linearGradient%3E%3ClinearGradient id='c' x1='1' x2='0'%3E%3Cstop offset='0' stop-color='%23bdced2' stop-opacity='.75'/%3E%3Cstop offset='1' stop-color='%23c9d9dc' stop-opacity='.55'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg filter='url(%23s)'%3E%3Cpath fill='url(%23t)' d='M0 0H1440V50C1120 130 780 10 440 70S120 120 0 90Z'/%3E%3Cpath fill='url(%23a)' d='M0 610C360 520 640 700 980 625S1320 545 1440 585V900H0Z'/%3E%3Cpath fill='url(%23b)' d='M0 700C320 645 620 775 930 715S1290 655 1440 695V900H0Z'/%3E%3Cpath fill='url(%23c)' d='M0 800C380 750 720 845 1060 795S1350 765 1440 785V900H0Z'/%3E%3C/g%3E%3Cg fill='none' stroke='%23fff' stroke-linecap='round'%3E%3Cpath stroke-opacity='.7' stroke-width='1.2' vector-effect='non-scaling-stroke' d='M0 610C360 520 640 700 980 625S1320 545 1440 585'/%3E%3Cpath stroke-opacity='.45' stroke-width='1' vector-effect='non-scaling-stroke' d='M0 700C320 645 620 775 930 715S1290 655 1440 695'/%3E%3C/g%3E%3C/svg%3E")
     center / 100% 100% no-repeat;
+}
+
+/* Faint logo watermark in the middle of the screen (rendered in the root layout) */
+.bg-watermark {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: url("/logo.png") center / min(60vmin, 560px) no-repeat;
+  opacity: 0.06;
+  filter: grayscale(1);
+  mix-blend-mode: multiply;
 }
 
 /* Montserrat SemiBold — headings, Montserrat Regular — text */
@@ -315,11 +330,8 @@ h6 {
     background: #fff;
   }
   body::before,
-  body::after {
+  body::after,
+  .bg-watermark {
     display: none;
   }
 }
-
-
-
-
