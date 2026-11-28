@@ -16,7 +16,7 @@ export type TestResult = {
   attemptsLeft?: number | null;
   /** ISO date when a retake becomes available (after a failed cycle). */
   lockedUntil?: string | null;
-  /** questionId → { correct ids, was the answer right } (only when showAnswers is on) */
+  /** questionId → { correct ids, was the answer right } (only when showAnswers is on and the test was passed) */
   review?: Record<string, { correctIds: string[]; right: boolean }>;
   lessonCompleted?: boolean;
 };
@@ -104,7 +104,8 @@ export async function submitTest(lessonId: string, answers: Record<string, strin
     passingScore: test.passingScore,
     attemptsLeft: isAdmin ? null : after.attemptsLeft,
     lockedUntil: isAdmin ? null : after.lockedUntil,
-    review: test.showAnswers ? review : undefined,
+    // correct answers are revealed only after a passed attempt, so a failed one can't be retaken from them
+    review: test.showAnswers && passed ? review : undefined,
     lessonCompleted,
   };
 }

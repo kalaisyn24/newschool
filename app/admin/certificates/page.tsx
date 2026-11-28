@@ -3,11 +3,11 @@ import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { Badge, EmptyState, PageHeader } from "@/components/ui";
-import { ActionForm, SubmitButton } from "@/components/forms";
+import { ActionForm, ConfirmButton, SubmitButton } from "@/components/forms";
 import { Icon } from "@/components/icons";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { certificateNames } from "@/lib/certificates";
-import { generateCertificate, uploadCertificate } from "./actions";
+import { deleteCertificate, generateCertificate, uploadCertificate } from "./actions";
 
 export const metadata: Metadata = { title: "Сертификаты" };
 
@@ -77,7 +77,17 @@ export default async function AdminCertificatesPage({ searchParams }: PageProps<
                     {c.issuedAt && ` · выдан ${formatDate(c.issuedAt)}`}
                   </p>
                 </div>
-                {c.issuedAt ? <Badge tone="green">Выдан</Badge> : <Badge tone="amber">Ожидает выдачи</Badge>}
+                <div className="flex items-center gap-2">
+                  {c.issuedAt ? <Badge tone="green">Выдан</Badge> : <Badge tone="amber">Ожидает выдачи</Badge>}
+                  <form action={deleteCertificate.bind(null, c.id)}>
+                    <ConfirmButton
+                      className="btn-ghost btn-sm text-rose-600"
+                      message={`Удалить сертификат № ${c.number} (${c.user.name} — «${c.course.title}»)? Студент больше не сможет его открыть.`}
+                    >
+                      Удалить
+                    </ConfirmButton>
+                  </form>
+                </div>
               </div>
               {c.fileKey && (
                 <div className="mt-3 flex flex-wrap gap-2">

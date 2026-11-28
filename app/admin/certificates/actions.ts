@@ -66,3 +66,13 @@ export async function generateCertificate(certId: string, _: ActionState, fd: Fo
     return { error: e instanceof Error ? `Не удалось сгенерировать: ${e.message}` : "Не удалось сгенерировать сертификат" };
   }
 }
+
+/** Deletes the certificate record together with its PDF file. */
+export async function deleteCertificate(certId: string) {
+  await requireRole("ADMIN");
+  const cert = await db.certificate.findUnique({ where: { id: certId }, select: { fileKey: true } });
+  if (!cert) return;
+  await db.certificate.delete({ where: { id: certId } });
+  await deleteUpload(cert.fileKey);
+  refresh();
+}
